@@ -13,7 +13,8 @@ object FingerColors {
         Color.BLUE,
         Color.YELLOW,
         Color.CYAN,
-        Color.MAGENTA, Color.rgb(255, 165, 0), // Orange
+        Color.MAGENTA,
+        Color.rgb(255, 165, 0), // Orange
         Color.rgb(128, 0, 128), // Purple
         Color.rgb(0, 128, 128)  // Teal
     )
@@ -64,10 +65,10 @@ data class FingerPoint(
 
     // --- Glow Specific Properties ---
     var isGlowing: Boolean = false,
-    var glowAnimationValue: Float = 0f, // Current value for glow animation (e.g., expanding radius)
+    var glowAnimationProgress: Float = 0f, // Current value for glow animation (percentage of max glow)
     var glowColor: Int = color,     // Default to finger color, can be customized
     var glowAlpha: Int = 150,       // Default alpha for glow
-    var maxGlowRadiusOffset: Float = 100f, // Max additional radius for glow
+    val maxGlowRadiusOffset: Float = 200f, // Max additional radius for glow
 
     // For FingerSelectorView's reveal animation (kept separate if its logic is distinct)
     var isRevealing: Boolean = false,
@@ -92,21 +93,19 @@ data class FingerPoint(
         }
     }
 
-    fun draw(canvas: Canvas, glowAnimationValueOverride: Float? = null) {
+    fun draw(canvas: Canvas, glowAnimationProgressOverride: Float? = null) {
         // 1. Draw the main finger circle
         basePaint.color = this.color
         canvas.drawCircle(x, y, fingerRadius, basePaint)
 
         // 2. Draw Glow if active
-        if (isGlowing || glowAnimationValueOverride != null) {
+        if (isGlowing || glowAnimationProgressOverride != null) {
             glowPaint.color = this.glowColor
             glowPaint.alpha = this.glowAlpha
-            glowAnimationValue = glowAnimationValueOverride ?: this.glowAnimationValue
-            glowPaint.strokeWidth =
-                10f + (glowAnimationValue * 0.5f) // Example: make stroke thicker with animation
+            glowAnimationProgress = glowAnimationProgressOverride ?: this.glowAnimationProgress
+            glowPaint.strokeWidth = glowAnimationProgress * maxGlowRadiusOffset
             // The glow radius is the base radius plus some animated offset
-            val currentGlowRadius = fingerRadius + glowAnimationValue
-            canvas.drawCircle(x, y, currentGlowRadius, glowPaint)
+            canvas.drawCircle(x, y, fingerRadius, glowPaint)
         }
 
         // 3. Draw assigned number (specific to FingerOrderingView, but harmless if number is null)
@@ -121,7 +120,7 @@ data class FingerPoint(
 
     fun resetAnimationStates() {
         isGlowing = false
-        glowAnimationValue = 0f
+        glowAnimationProgress = 0f
 
         isRevealing = false
         revealRadius = 0f

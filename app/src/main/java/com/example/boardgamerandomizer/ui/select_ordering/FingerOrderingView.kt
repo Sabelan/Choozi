@@ -11,9 +11,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.boardgamerandomizer.ui.shared.FingerColors
-import com.example.boardgamerandomizer.ui.shared.FingerPoint
 import kotlin.math.ceil
+import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import com.example.boardgamerandomizer.ui.shared.FingerColors
 
 class FingerOrderingView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -23,6 +23,7 @@ class FingerOrderingView @JvmOverloads constructor(
 
     private var countdownTimer: CountDownTimer? = null
     private var isCountingDown = false
+    private var countDownProgress: Float? = null
     private var selectionProcessStarted = false // Indicates if any finger has initiated the process
     private var selectionComplete = false
     private var selectionCompleteAndAnimationsDone = false // Indicates final state is reached
@@ -49,7 +50,7 @@ class FingerOrderingView @JvmOverloads constructor(
         private const val TAG = "FingerOrderingView"
         private const val COUNTDOWN_DURATION_SECONDS = 3
         private const val COUNTDOWN_DURATION_MS = COUNTDOWN_DURATION_SECONDS * 1000L
-        private const val COUNTDOWN_INTERVAL_MS = 100L
+        private const val COUNTDOWN_INTERVAL_MS = 50L
         private const val ANIMATION_DURATION_MS = 500L
     }
 
@@ -134,12 +135,12 @@ class FingerOrderingView @JvmOverloads constructor(
         countdownTimer?.cancel()
         countdownTimer = object : CountDownTimer(COUNTDOWN_DURATION_MS, COUNTDOWN_INTERVAL_MS) {
             override fun onTick(millisUntilFinished: Long) {
+                countDownProgress = 1f - (millisUntilFinished / COUNTDOWN_DURATION_MS.toFloat())
                 val seconds = ceil(millisUntilFinished / 1000.0).toInt()
                 if (seconds != countdownSecondsRemaining) {
                     countdownSecondsRemaining = seconds
                     onTimerTickListener?.invoke(countdownSecondsRemaining)
                 }
-                // Log.v(TAG, "Countdown Tick: $countdownSecondsRemaining")
                 invalidate() // Keep invalidating for visual updates if any during tick
             }
 
@@ -200,21 +201,21 @@ class FingerOrderingView @JvmOverloads constructor(
                 "Starting animation for finger ${fingerToAnimate.id}, number ${fingerToAnimate.assignedNumber}"
             )
             fingerToAnimate.isGlowing = true
-            fingerToAnimate.glowAnimationValue = 0f
+            fingerToAnimate.glowAnimationProgress = 0f
 
-            val animator = ValueAnimator.ofFloat(0f, fingerToAnimate.maxGlowRadiusOffset)
+            val animator = ValueAnimator.ofFloat(0f, 1.0f)
                 .apply { // Animate the *additional* radius
                     duration = ANIMATION_DURATION_MS
                     interpolator = AccelerateDecelerateInterpolator()
                     addUpdateListener { animation ->
-                        fingerToAnimate.glowAnimationValue = animation.animatedValue as Float
+                        fingerToAnimate.glowAnimationProgress = animation.animatedValue as Float
                         invalidate()
                     }
                     addListener(object : android.animation.AnimatorListenerAdapter() {
                         override fun onAnimationEnd(animation: android.animation.Animator) {
                             Log.d(TAG, "Animation ended for finger ${fingerToAnimate.id}")
                             fingerToAnimate.isGlowing = false
-                            fingerToAnimate.glowAnimationValue = 0f
+                            fingerToAnimate.glowAnimationProgress = 0f
                             invalidate()
                             startNextGlowAnimation() // Trigger next animation
                         }
@@ -238,7 +239,15 @@ class FingerOrderingView @JvmOverloads constructor(
         // Draw all active fingers (those still on screen or part of the selection)
         val fingersToDraw = if (selectionComplete) assignedNumbersOrder else activeFingers
 
-        fingersToDraw.forEach { finger -> finger.draw(canvas) }
+        val progressAtStart: Float? = countDownProgress
+        fingersToDraw.forEach { finger ->
+            // Glow up to 20% of max glow during selection process.
+            var glowAnimationProgressOverride: Float? = null
+            if (!selectionComplete && progressAtStart != null) {
+                glowAnimationProgressOverride = (progressAtStart / 5.0f)
+            }
+            finger.draw(canvas, glowAnimationProgressOverride)
+        }
 
         // Draw countdown timer text
         if (isCountingDown && !selectionCompleteAndAnimationsDone && activeFingers.isNotEmpty()) {
@@ -256,7 +265,7 @@ class FingerOrderingView @JvmOverloads constructor(
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
             it.isGlowing = false
-            it.glowAnimationValue = 0f
+            it.glowAnimationProgress = 0f
             it.assignedNumber = null // Clear assigned number if reset before completion
         }
         activeFingers.forEach { // Also clear numbers from active fingers not yet in assigned order

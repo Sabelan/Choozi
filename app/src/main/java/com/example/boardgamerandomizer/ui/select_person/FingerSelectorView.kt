@@ -31,6 +31,7 @@ class FingerSelectorView @JvmOverloads constructor(
     }
     private var selectedFingerIndex: Int = -1
     private var countdownSeconds: Int = 0
+    private var countDownProgress: Float? = null
     private var fingerRadius: Float = 120f
     private var countDownTimer: CountDownTimer? = null
     private var timerRunning = false
@@ -110,8 +111,9 @@ class FingerSelectorView @JvmOverloads constructor(
         onTimerStartListener?.invoke()
         timerRunning = true
         countdownSeconds = 3
-        countDownTimer = object : CountDownTimer(3000, 1000) {
+        countDownTimer = object : CountDownTimer(3000, 50) {
             override fun onTick(millisUntilFinished: Long) {
+                countDownProgress = (3000 - millisUntilFinished) / 3000.0f
                 countdownSeconds = ceil(millisUntilFinished / 1000.0).toInt()
                 onTimerTickListener?.invoke(countdownSeconds)
                 invalidate()
@@ -145,10 +147,7 @@ class FingerSelectorView @JvmOverloads constructor(
 
                 // Draw the expanding circle
                 canvas.drawCircle(
-                    selectedFinger.x,
-                    selectedFinger.y,
-                    revealAnimationRadius,
-                    revealPaint
+                    selectedFinger.x, selectedFinger.y, revealAnimationRadius, revealPaint
                 )
 
                 // NOW, ONLY DRAW THE SELECTED FINGER ON TOP OF THE REVEAL
@@ -163,6 +162,16 @@ class FingerSelectorView @JvmOverloads constructor(
                 paint.style = Paint.Style.FILL // Reset style
             }
         } else {
+            val progressAtStart = countDownProgress
+            fingers.forEach { finger ->
+                // Glow up to 20% of max glow during selection process.
+                var glowAnimationProgressOverride: Float? = null
+                if (!isRevealAnimationRunning && progressAtStart != null) {
+                    glowAnimationProgressOverride = (progressAtStart / 5.0f)
+                }
+                finger.draw(canvas, glowAnimationProgressOverride)
+            }
+
             fingers.forEach { finger ->
                 finger.draw(canvas)
             }
@@ -198,8 +207,7 @@ class FingerSelectorView @JvmOverloads constructor(
             val dy2 = height - selectedFinger.y
 
             maxRevealRadius = hypot(
-                max(dx1, dx2).toDouble(),
-                max(dy1, dy2).toDouble()
+                max(dx1, dx2).toDouble(), max(dy1, dy2).toDouble()
             ).toFloat()
 
             startRevealAnimation()
