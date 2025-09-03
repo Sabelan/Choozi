@@ -167,7 +167,7 @@ class FingerSelectorView @JvmOverloads constructor(
                 // Glow up to 20% of max glow during selection process.
                 var glowAnimationProgressOverride: Float? = null
                 if (!isRevealAnimationRunning && progressAtStart != null) {
-                    glowAnimationProgressOverride = (progressAtStart / 5.0f)
+                    glowAnimationProgressOverride = progressAtStart
                 }
                 finger.draw(canvas, glowAnimationProgressOverride)
             }
