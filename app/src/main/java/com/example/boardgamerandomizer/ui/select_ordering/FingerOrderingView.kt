@@ -5,30 +5,19 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.PointF
 import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.example.boardgamerandomizer.ui.shared.FingerColors
+import com.example.boardgamerandomizer.ui.shared.FingerPoint
 import kotlin.math.ceil
-import kotlin.random.Random
 
 class FingerOrderingView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
-
-    private data class FingerPoint(
-        val id: Int, // Pointer ID from MotionEvent
-        var position: PointF,
-        var color: Int,
-        var assignedNumber: Int? = null,
-        var animationRadius: Float = 0f,
-        var isAnimating: Boolean = false,
-        var finalGlowRadius: Float = 0f // To store the radius for persistent glow
-    )
-
     private val activeFingers = mutableListOf<FingerPoint>()
     private val assignedNumbersOrder = mutableListOf<FingerPoint>() // For animation sequence
 
@@ -40,13 +29,6 @@ class FingerOrderingView @JvmOverloads constructor(
     private var currentAnimatingFingerIndex = -1
     private var countdownSecondsRemaining: Int = 0
 
-    private val textPaint = Paint().apply {
-        color = Color.BLACK
-        textSize = 80f
-        textAlign = Paint.Align.CENTER
-        isAntiAlias = true
-    }
-
     private val countdownTextPaint = Paint().apply {
         color = Color.WHITE
         textSize = 150f
@@ -54,23 +36,6 @@ class FingerOrderingView @JvmOverloads constructor(
         isAntiAlias = true
         setShadowLayer(20f, 2f, 2f, Color.BLACK)
     }
-
-
-    private val circlePaint = Paint().apply {
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
-
-    private val glowPaint = Paint().apply {
-        style = Paint.Style.STROKE // Keep as stroke for outline effect
-        strokeWidth = 20f // Glow thickness
-        isAntiAlias = true
-    }
-
-    private val fingerRadius = 120f // Radius of the circle under the finger (from original)
-
-    // Max radius for the *animation* part of the glow
-    private val maxGlowAnimationRadius = fingerRadius + 200f
 
     // Listeners (from original FingerOrderingView)
     var onSelectionCompleteListener: (() -> Unit)? =
@@ -86,43 +51,7 @@ class FingerOrderingView @JvmOverloads constructor(
         private const val COUNTDOWN_DURATION_MS = COUNTDOWN_DURATION_SECONDS * 1000L
         private const val COUNTDOWN_INTERVAL_MS = 100L
         private const val ANIMATION_DURATION_MS = 500L
-
-        private val COLORS = listOf(
-            Color.RED,
-            Color.GREEN,
-            Color.BLUE,
-            Color.YELLOW,
-            Color.CYAN,
-            Color.MAGENTA,
-            Color.rgb(255, 165, 0),
-            Color.rgb(128, 0, 128),
-            Color.rgb(0, 128, 128)
-        )
-        private var colorIndex = 0
-
-        private fun generateRandomColorFallback(): Int { // Or use a fixed palette
-            val color = COLORS[colorIndex % COLORS.size]
-            colorIndex++
-            return color
-        }
-
-        private fun pickRandomColor(activeFingers: List<FingerPoint>): Int {
-            val randomizedOrder = (0 until COLORS.size).toList().shuffled()
-            Log.d(TAG, "Randomized order: $randomizedOrder")
-            for (index in randomizedOrder) {
-                if (activeFingers.find { it.color == COLORS[index] } == null) {
-                    return COLORS[index]
-                }
-            }
-            return generateRandomColorFallback()
-        }
     }
-
-    init {
-        // From original: For reveal animation, not directly used in this number assignment glow
-        // revealPaint.color = Color.TRANSPARENT
-    }
-
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionCompleteAndAnimationsDone) return true
@@ -147,7 +76,7 @@ class FingerOrderingView @JvmOverloads constructor(
                 if (activeFingers.find { it.id == pointerId } == null) {
                     activeFingers.add(
                         FingerPoint(
-                            pointerId, PointF(x, y), color = pickRandomColor(activeFingers)
+                            pointerId, x, y, color = FingerColors.pickRandomColor(activeFingers)
                         )
                     )
                     Log.d(TAG, "Added finger $pointerId. Count: ${activeFingers.size}")
@@ -168,8 +97,8 @@ class FingerOrderingView @JvmOverloads constructor(
                     val id = event.getPointerId(i)
                     val finger = activeFingers.find { it.id == id }
                     finger?.let {
-                        it.position.x = event.getX(i)
-                        it.position.y = event.getY(i)
+                        it.x = event.getX(i)
+                        it.y = event.getY(i)
                     }
                 }
                 invalidate()
@@ -244,7 +173,6 @@ class FingerOrderingView @JvmOverloads constructor(
 
         // Make a mutable copy for shuffling and assigning numbers without affecting activeFingers directly yet
         val fingersToAssign = activeFingers.toMutableList()
-        // Optional: Shuffle for random number assignment
         fingersToAssign.shuffle()
 
         assignedNumbersOrder.clear()
@@ -271,24 +199,22 @@ class FingerOrderingView @JvmOverloads constructor(
                 TAG,
                 "Starting animation for finger ${fingerToAnimate.id}, number ${fingerToAnimate.assignedNumber}"
             )
-            fingerToAnimate.isAnimating = true
-            fingerToAnimate.animationRadius = 0f // Start animation from base
+            fingerToAnimate.isGlowing = true
+            fingerToAnimate.glowAnimationValue = 0f
 
-            val animator = ValueAnimator.ofFloat(0f, maxGlowAnimationRadius - fingerRadius)
+            val animator = ValueAnimator.ofFloat(0f, fingerToAnimate.maxGlowRadiusOffset)
                 .apply { // Animate the *additional* radius
                     duration = ANIMATION_DURATION_MS
                     interpolator = AccelerateDecelerateInterpolator()
                     addUpdateListener { animation ->
-                        fingerToAnimate.animationRadius = animation.animatedValue as Float
+                        fingerToAnimate.glowAnimationValue = animation.animatedValue as Float
                         invalidate()
                     }
                     addListener(object : android.animation.AnimatorListenerAdapter() {
                         override fun onAnimationEnd(animation: android.animation.Animator) {
                             Log.d(TAG, "Animation ended for finger ${fingerToAnimate.id}")
-                            fingerToAnimate.isAnimating = false
-                            // For persistent glow, set a final radius or rely on a different drawing path
-                            fingerToAnimate.finalGlowRadius =
-                                maxGlowAnimationRadius // Or a fixed value for the outline
+                            fingerToAnimate.isGlowing = false
+                            fingerToAnimate.glowAnimationValue = 0f
                             invalidate()
                             startNextGlowAnimation() // Trigger next animation
                         }
@@ -299,7 +225,7 @@ class FingerOrderingView @JvmOverloads constructor(
             Log.d(TAG, "All glow animations complete.")
             selectionCompleteAndAnimationsDone = true
             assignedNumbersOrder.forEach {
-                it.isAnimating = false
+                it.isGlowing = false
             } // Ensure all are marked as not animating
             onAllAnimationsCompleteListener?.invoke()
             invalidate() // Final draw of the completed state
@@ -312,45 +238,7 @@ class FingerOrderingView @JvmOverloads constructor(
         // Draw all active fingers (those still on screen or part of the selection)
         val fingersToDraw = if (selectionComplete) assignedNumbersOrder else activeFingers
 
-        fingersToDraw.forEach { finger ->
-            // Draw base circle
-            circlePaint.color = finger.color
-            canvas.drawCircle(finger.position.x, finger.position.y, fingerRadius, circlePaint)
-
-            // Draw assigned number if available
-            finger.assignedNumber?.let { num ->
-                val textY = finger.position.y - (textPaint.descent() + textPaint.ascent()) / 2f
-                canvas.drawText(num.toString(), finger.position.x, textY, textPaint)
-            }
-
-            // Draw glow animation or persistent glow
-            if (finger.isAnimating) {
-                glowPaint.color = finger.color
-                // Fade out alpha for animating glow
-                glowPaint.alpha =
-                    ((maxGlowAnimationRadius - (fingerRadius + finger.animationRadius)) / (maxGlowAnimationRadius - fingerRadius) * 255).toInt()
-                        .coerceIn(0, 255)
-                canvas.drawCircle(
-                    finger.position.x,
-                    finger.position.y,
-                    fingerRadius + finger.animationRadius,
-                    glowPaint
-                )
-            }
-//            else if (selectionCompleteAndAnimationsDone && finger.assignedNumber != null) {
-//                // Persistent glow outline for selected fingers after animation
-//                glowPaint.color = getContrastingColor(finger.color) // Or use finger.color
-//                glowPaint.alpha = 255 // Full alpha
-//                glowPaint.strokeWidth = persistentGlowOutlineWidth
-//                canvas.drawCircle(
-//                    finger.position.x,
-//                    finger.position.y,
-//                    fingerRadius + persistentGlowOutlineWidth / 2,
-//                    glowPaint
-//                ) // Centered stroke
-//            }
-        }
-        glowPaint.strokeWidth = 20f
+        fingersToDraw.forEach { finger -> finger.draw(canvas) }
 
         // Draw countdown timer text
         if (isCountingDown && !selectionCompleteAndAnimationsDone && activeFingers.isNotEmpty()) {
@@ -362,28 +250,18 @@ class FingerOrderingView @JvmOverloads constructor(
         }
     }
 
-    // From original FingerOrderingView
-    private fun getContrastingColor(backgroundColor: Int): Int {
-        val y =
-            (299 * Color.red(backgroundColor) + 587 * Color.green(backgroundColor) + 114 * Color.blue(
-                backgroundColor
-            )) / 1000.0
-        return if (y >= 128) Color.BLACK else Color.WHITE
-    }
-
     private fun internalResetProcess() {
         Log.d(TAG, "internalResetProcess called.")
         countdownTimer?.cancel()
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
-            it.isAnimating = false
-            it.animationRadius = 0f
+            it.isGlowing = false
+            it.glowAnimationValue = 0f
             it.assignedNumber = null // Clear assigned number if reset before completion
         }
         activeFingers.forEach { // Also clear numbers from active fingers not yet in assigned order
             it.assignedNumber = null
         }
-
 
         isCountingDown = false
         selectionProcessStarted = false
@@ -396,7 +274,6 @@ class FingerOrderingView @JvmOverloads constructor(
         assignedNumbersOrder.clear()
         currentAnimatingFingerIndex = -1
         countdownSecondsRemaining = 0
-        colorIndex = 0 // Reset color picking
 
         onTimerTickListener?.invoke(-1) // Signal reset to listeners
         invalidate()
@@ -411,7 +288,6 @@ class FingerOrderingView @JvmOverloads constructor(
         // Clear all fingers as this is a full external reset
         activeFingers.clear()
         assignedNumbersOrder.clear()
-        colorIndex = 0
         selectionCompleteAndAnimationsDone = false
 
         internalResetProcess()

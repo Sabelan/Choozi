@@ -9,9 +9,13 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.os.CountDownTimer
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.example.boardgamerandomizer.ui.shared.FingerColors
+import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import kotlin.math.ceil
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.random.Random
@@ -37,13 +41,6 @@ class FingerSelectorView @JvmOverloads constructor(
     var onTimerTickListener: ((secondsRemaining: Int) -> Unit)? = null
     var onTimerStartListener: (() -> Unit)? = null
 
-    private val colors = listOf(
-        Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN, Color.MAGENTA,
-        Color.rgb(255, 165, 0), // Orange
-        Color.rgb(128, 0, 128), // Purple
-        Color.rgb(0, 128, 128)  // Teal
-    )
-
     private val textPaint = Paint().apply {
         color = Color.WHITE
         textSize = 150f
@@ -59,17 +56,6 @@ class FingerSelectorView @JvmOverloads constructor(
     private var revealAnimationRadius: Float = 0f
     private var maxRevealRadius: Float = 0f
 
-    private fun pickRandomColor(activeFingers: List<FingerSelectorView.FingerPoint>): Int {
-        val randomizedOrder = (0 until colors.size).toList().shuffled()
-        for (index in randomizedOrder) {
-            if (activeFingers.find { it.color == colors[index] } == null) {
-                return colors[index]
-            }
-        }
-        return colors[fingers.size % colors.size]
-    }
-
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionDone || isRevealAnimationRunning) return false
 
@@ -79,7 +65,7 @@ class FingerSelectorView @JvmOverloads constructor(
                 val pointerId = event.getPointerId(pointerIndex)
                 val x = event.getX(pointerIndex)
                 val y = event.getY(pointerIndex)
-                val color = pickRandomColor(fingers)
+                val color = FingerColors.pickRandomColor(fingers)
                 fingers.add(FingerPoint(pointerId, x, y, color))
                 invalidate()
                 startSelectionTimer()
@@ -126,7 +112,7 @@ class FingerSelectorView @JvmOverloads constructor(
         countdownSeconds = 3
         countDownTimer = object : CountDownTimer(3000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                countdownSeconds = (millisUntilFinished / 1000).toInt() + 1
+                countdownSeconds = ceil(millisUntilFinished / 1000.0).toInt()
                 onTimerTickListener?.invoke(countdownSeconds)
                 invalidate()
             }
@@ -167,7 +153,7 @@ class FingerSelectorView @JvmOverloads constructor(
 
                 // NOW, ONLY DRAW THE SELECTED FINGER ON TOP OF THE REVEAL
                 paint.color = selectedFinger.color // The selected finger's actual color
-                canvas.drawCircle(selectedFinger.x, selectedFinger.y, fingerRadius, paint)
+                selectedFinger.draw(canvas)
 
                 // And its highlight ring
                 paint.color = getContrastingColor(selectedFinger.color)
@@ -177,10 +163,8 @@ class FingerSelectorView @JvmOverloads constructor(
                 paint.style = Paint.Style.FILL // Reset style
             }
         } else {
-            // --- Normal state: Draw ALL fingers before selection animation starts ---
-            fingers.forEach { finger -> // No need for index if not using it here
-                paint.color = finger.color
-                canvas.drawCircle(finger.x, finger.y, fingerRadius, paint)
+            fingers.forEach { finger ->
+                finger.draw(canvas)
             }
         }
 
@@ -278,6 +262,4 @@ class FingerSelectorView @JvmOverloads constructor(
         countDownTimer?.cancel()
         revealAnimator?.cancel()
     }
-
-    private data class FingerPoint(val id: Int, var x: Float, var y: Float, val color: Int)
 }
