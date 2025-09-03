@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/navigation_select_person"
+        android:icon="@drawable/group_search_24px"
+        android:title="@string/title_select_person" />
+
+    <item
+        android:id="@+id/navigation_select_ordering"
+        android:icon="@drawable/people_ordering_icons"
+        android:title="@string/title_select_ordering" />
+
+</menu>
