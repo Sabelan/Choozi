@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.example.boardgamerandomizer.ui.shared.AudioPlayer
 import com.example.boardgamerandomizer.ui.shared.FingerColors
 import com.example.boardgamerandomizer.ui.shared.FingerPoint
 import kotlin.math.ceil
@@ -42,6 +43,8 @@ class FingerSelectorView @JvmOverloads constructor(
     var onTimerTickListener: ((secondsRemaining: Int) -> Unit)? = null
     var onTimerStartListener: (() -> Unit)? = null
 
+    // Audio player for the charge sound - set up in the fragment
+    var chargeAudioPlayer: AudioPlayer? = null
     private val textPaint = Paint().apply {
         color = Color.WHITE
         textSize = 150f
@@ -109,6 +112,16 @@ class FingerSelectorView @JvmOverloads constructor(
         // Cancel previous timer
         if (timerRunning) {
             cancelSelectionTimer()
+        }
+        val audioPlayer = chargeAudioPlayer
+        if (audioPlayer != null) {
+            if (audioPlayer.isPlaying()) {
+                audioPlayer.restart()
+            } else {
+                audioPlayer.play {
+                    Log.d("FingerOrderingView", "Starting selection sound playback completed.")
+                }
+            }
         }
         onTimerStartListener?.invoke()
         timerRunning = true

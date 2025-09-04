@@ -6,7 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.example.boardgamerandomizer.R
 import com.example.boardgamerandomizer.databinding.FragmentSelectPersonBinding
+import com.example.boardgamerandomizer.ui.shared.AudioPlayer
 
 class SelectPersonFragment : Fragment() {
 
@@ -14,6 +16,8 @@ class SelectPersonFragment : Fragment() {
 
     // This property is only valid between onCreateView and onDestroyView.
     private val binding get() = _binding!!
+
+    var chargeAudioPlayer: AudioPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -32,8 +36,12 @@ class SelectPersonFragment : Fragment() {
 
     private fun setupFingerSelectorView() {
         Log.d("HomeFragment", "settingUpFingerSelectorView")
+
+        chargeAudioPlayer = AudioPlayer(requireContext())
+        chargeAudioPlayer?.loadSound(R.raw.charge_sound)
         // Access views using binding
         val fingerSelectorViewInstance = binding.fingerSelectorView
+        fingerSelectorViewInstance.chargeAudioPlayer = chargeAudioPlayer
         val resetButtonInstance = binding.selectPersonResetButton
 
         // Set the listener for when selection is complete
@@ -66,5 +74,7 @@ class SelectPersonFragment : Fragment() {
         binding.fingerSelectorView.onTimerStartListener = null
         binding.fingerSelectorView.onTimerTickListener = null
         _binding = null
+        // Release charge audio player
+        chargeAudioPlayer?.release()
     }
 }

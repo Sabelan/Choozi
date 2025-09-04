@@ -11,9 +11,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import kotlin.math.ceil
-import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import com.example.boardgamerandomizer.ui.shared.AudioPlayer
 import com.example.boardgamerandomizer.ui.shared.FingerColors
+import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import kotlin.math.ceil
 
 class FingerOrderingView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -45,6 +46,8 @@ class FingerOrderingView @JvmOverloads constructor(
         null // Called when ALL glow animations are DONE
     var onTimerTickListener: ((secondsRemaining: Int) -> Unit)? = null
 
+    // Audio player for the charge sound - set up in the fragment
+    var chargeAudioPlayer: AudioPlayer? = null
 
     companion object {
         private const val TAG = "FingerOrderingView"
@@ -130,6 +133,16 @@ class FingerOrderingView @JvmOverloads constructor(
     private fun startCountdownTimer() {
         if (!activeFingers.isNotEmpty() || selectionComplete) return
 
+        val audioPlayer = chargeAudioPlayer
+        if (audioPlayer != null) {
+            if (audioPlayer.isPlaying()) {
+                audioPlayer.restart()
+            } else {
+                audioPlayer.play {
+                    Log.d("FingerOrderingView", "Starting selection sound playback completed.")
+                }
+            }
+        }
         isCountingDown = true
         countdownSecondsRemaining = COUNTDOWN_DURATION_SECONDS
         onTimerTickListener?.invoke(countdownSecondsRemaining) // Initial tick

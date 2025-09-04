@@ -1,21 +1,21 @@
 package com.example.boardgamerandomizer.ui.select_ordering
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.boardgamerandomizer.R
 import com.example.boardgamerandomizer.databinding.FragmentSelectOrderingBinding
-import com.example.boardgamerandomizer.ui.select_ordering.FingerOrderingView
+import com.example.boardgamerandomizer.ui.shared.AudioPlayer
 
 class SelectOrderingFragment : Fragment() {
 
     private var _binding: FragmentSelectOrderingBinding? = null // For ViewBinding
     private val binding get() = _binding!!
+
+    var chargeAudioPlayer: AudioPlayer? = null
 
     // viewModel is already there from your provided code
     private val viewModel: SelectOrderingViewModel by viewModels()
@@ -29,8 +29,10 @@ class SelectOrderingFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        chargeAudioPlayer = AudioPlayer(requireContext())
+        chargeAudioPlayer?.loadSound(R.raw.charge_sound)
         val fingerOrderingView = binding.fingerOrderingView
+        fingerOrderingView.chargeAudioPlayer = chargeAudioPlayer
         val resetButtonInstance = binding.selectOrderingResetButton
         // If you added a reset button:
         resetButtonInstance.setOnClickListener {
@@ -41,16 +43,13 @@ class SelectOrderingFragment : Fragment() {
         fingerOrderingView.onAllAnimationsCompleteListener = {
             resetButtonInstance.visibility = View.VISIBLE
         }
-
-        // You might want to show the reset button after selection is complete.
-        // This would require a callback from the FingerOrderingView to the Fragment.
-        // For simplicity, this example keeps it manual or could be triggered
-        // after a certain delay within the FingerOrderingView itself.
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null // Clear ViewBinding reference
+        // Release AudioPlayer resources when the view is destroyed
+        chargeAudioPlayer?.release()
     }
 
     // Companion object from your code
