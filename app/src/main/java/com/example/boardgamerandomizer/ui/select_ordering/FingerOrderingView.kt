@@ -116,6 +116,9 @@ class FingerOrderingView @JvmOverloads constructor(
                     // All fingers lifted *during* countdown or before selection is final
                     Log.d(TAG, "All fingers lifted before selection complete. Resetting process.")
                     internalResetProcess() // Resets the current attempt
+                } else if (activeFingers.isNotEmpty()) {
+                    selectionProcessStarted = true
+                    startCountdownTimer()
                 }
                 invalidate()
                 return true

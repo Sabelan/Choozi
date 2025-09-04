@@ -94,6 +94,8 @@ class FingerSelectorView @JvmOverloads constructor(
                 fingers.removeAll { it.id == pointerId }
                 if (fingers.isEmpty() && timerRunning) {
                     cancelSelectionTimer()
+                } else if (fingers.isNotEmpty()) {
+                    startSelectionTimer()
                 }
                 invalidate()
                 return true
