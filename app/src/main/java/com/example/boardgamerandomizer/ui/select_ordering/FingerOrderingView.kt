@@ -187,6 +187,7 @@ class FingerOrderingView @JvmOverloads constructor(
 
         onSelectionCompleteListener?.invoke() // Numbers assigned, animations about to start
         selectionComplete = true
+        countDownProgress = 0f
         currentAnimatingFingerIndex = -1 // Reset for new animation sequence
         invalidate() // Redraw to show numbers before animation
         startNextGlowAnimation()

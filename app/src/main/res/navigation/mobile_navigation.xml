@@ -16,10 +16,4 @@
         android:name="com.example.boardgamerandomizer.ui.select_ordering.SelectOrderingFragment"
         android:label="@string/title_select_ordering"
         tools:layout="@layout/fragment_select_ordering" />
-
-    <!--    <fragment-->
-    <!--        android:id="@+id/navigation_notifications"-->
-    <!--        android:name="com.example.boardgamerandomizer.ui.notifications.NotificationsFragment"-->
-    <!--        android:label="@string/title_notifications"-->
-    <!--        tools:layout="@layout/fragment_notifications" />-->
 </navigation>

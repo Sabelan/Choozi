@@ -164,16 +164,11 @@ class FingerSelectorView @JvmOverloads constructor(
         } else {
             val progressAtStart = countDownProgress
             fingers.forEach { finger ->
-                // Glow up to 20% of max glow during selection process.
                 var glowAnimationProgressOverride: Float? = null
                 if (!isRevealAnimationRunning && progressAtStart != null) {
                     glowAnimationProgressOverride = progressAtStart
                 }
                 finger.draw(canvas, glowAnimationProgressOverride)
-            }
-
-            fingers.forEach { finger ->
-                finger.draw(canvas)
             }
         }
 
@@ -235,6 +230,7 @@ class FingerSelectorView @JvmOverloads constructor(
                     selectionDone = true
                     // Ensure the final radius covers everything
                     revealAnimationRadius = maxRevealRadius
+                    countDownProgress = 0f
                     onSelectionCompleteListener?.invoke()
                     invalidate()
                 }

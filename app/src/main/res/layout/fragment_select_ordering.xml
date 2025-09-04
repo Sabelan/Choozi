@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    tools:context=".ui.select_ordering.FingerOrderingView">
+    tools:context=".ui.select_ordering.SelectOrderingFragment">
 
     <com.example.boardgamerandomizer.ui.select_ordering.FingerOrderingView
         android:id="@+id/fingerOrderingView"
