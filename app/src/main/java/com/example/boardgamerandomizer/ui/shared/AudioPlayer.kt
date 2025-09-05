@@ -21,6 +21,7 @@ class AudioPlayer(private val context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private var currentSoundResId: Int? = null
     private var isPrepared: Boolean = false
+    private var currentSoundVolume: Float = 1.0f
 
     /**
      * Loads a sound resource. If a sound is already loaded, it will be released first.
@@ -43,6 +44,7 @@ class AudioPlayer(private val context: Context) {
             mediaPlayer = MediaPlayer.create(context, soundResId)
             mediaPlayer?.setOnPreparedListener {
                 isPrepared = true
+                setVolume(0.5f)
                 onLoaded?.invoke()
             }
             mediaPlayer?.setOnErrorListener { _, what, extra ->
@@ -61,6 +63,18 @@ class AudioPlayer(private val context: Context) {
         } catch (e: Exception) {
             isPrepared = false
             onError?.invoke(e)
+        }
+    }
+
+    /**
+     * Sets the volume for the MediaPlayer.
+     *
+     * @param volume The volume level (0.0f to 1.0f). Values outside this range will be clamped.
+     */
+    fun setVolume(volume: Float) {
+        currentSoundVolume = volume.coerceIn(0.0f, 1.0f) // Ensure volume is within valid range
+        if (isPrepared) {
+            mediaPlayer?.setVolume(currentSoundVolume, currentSoundVolume)
         }
     }
 
