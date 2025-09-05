@@ -44,7 +44,7 @@ class AudioPlayer(private val context: Context) {
             mediaPlayer = MediaPlayer.create(context, soundResId)
             mediaPlayer?.setOnPreparedListener {
                 isPrepared = true
-                setVolume(0.5f)
+                setVolume(0.3f)
                 onLoaded?.invoke()
             }
             mediaPlayer?.setOnErrorListener { _, what, extra ->
