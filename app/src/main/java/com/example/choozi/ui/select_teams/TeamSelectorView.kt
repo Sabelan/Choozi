@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.select_teams
+package com.example.choozi.ui.select_teams
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -11,9 +11,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.boardgamerandomizer.ui.shared.AudioManager
-import com.example.boardgamerandomizer.ui.shared.FingerColors
-import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import com.example.choozi.ui.shared.AudioManager
+import com.example.choozi.ui.shared.FingerColors
+import com.example.choozi.ui.shared.FingerPoint
 import kotlin.math.ceil
 
 class TeamSelectorView @JvmOverloads constructor(

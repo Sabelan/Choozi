@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer
+package com.example.choozi
 
 import org.junit.Test
 

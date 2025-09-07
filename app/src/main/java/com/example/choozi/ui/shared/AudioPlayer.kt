@@ -1,13 +1,13 @@
-package com.example.boardgamerandomizer.ui.shared
+package com.example.choozi.ui.shared
 
 import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
 import androidx.annotation.RawRes
-import com.example.boardgamerandomizer.R
+import com.example.choozi.R
 import java.io.IOException
 
-class AudioManager(private val context: Context) {
+class AudioManager(context: Context) {
     private val buildUpPlayer: AudioPlayer = AudioPlayer(context).apply {
         loadSound(R.raw.build_up, volume = 0.4f)
     }
@@ -24,7 +24,7 @@ class AudioManager(private val context: Context) {
     }
 
     fun playFinalNote() {
-        Log.d("AudioManager", "playFinalNote()")
+//        Log.d("AudioManager", "playFinalNote()")
         if (finalNotePlayer.isPlaying()) {
             finalNotePlayer.restart()
         } else {
@@ -33,7 +33,7 @@ class AudioManager(private val context: Context) {
     }
 
     fun stopAny() {
-        Log.d("AudioManager", "stopAny()")
+//        Log.d("AudioManager", "stopAny()")
         buildUpPlayer.stop()
         finalNotePlayer.stop()
     }

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.select_teams.SelectTeamsFragment">
 
-    <com.example.boardgamerandomizer.ui.select_teams.TeamSelectorView
+    <com.example.choozi.ui.select_teams.TeamSelectorView
         android:id="@+id/teamSelectorView"
         android:layout_width="0dp"
         android:layout_height="0dp"

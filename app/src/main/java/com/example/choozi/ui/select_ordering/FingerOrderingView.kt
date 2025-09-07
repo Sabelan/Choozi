@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.select_ordering
+package com.example.choozi.ui.select_ordering
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -11,9 +11,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.boardgamerandomizer.ui.shared.AudioManager
-import com.example.boardgamerandomizer.ui.shared.FingerColors
-import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import com.example.choozi.ui.shared.AudioManager
+import com.example.choozi.ui.shared.FingerColors
+import com.example.choozi.ui.shared.FingerPoint
 import kotlin.math.ceil
 
 class FingerOrderingView @JvmOverloads constructor(
@@ -62,11 +62,10 @@ class FingerOrderingView @JvmOverloads constructor(
         val action = event.actionMasked
         val pointerIndex = event.actionIndex
         val pointerId = event.getPointerId(pointerIndex)
-
-        Log.d(
-            TAG,
-            "onTouchEvent: action=$action, pointerId=$pointerId, activeFingers=${activeFingers.size}, isCountingDown=$isCountingDown, selectionProcessStarted=$selectionProcessStarted"
-        )
+//        Log.d(
+//            TAG,
+//            "onTouchEvent: action=$action, pointerId=$pointerId, activeFingers=${activeFingers.size}, isCountingDown=$isCountingDown, selectionProcessStarted=$selectionProcessStarted"
+//        )
 
         when (action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {

@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.select_person
+package com.example.choozi.ui.select_person
 
 import androidx.lifecycle.ViewModel
 

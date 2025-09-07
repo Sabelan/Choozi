@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.select_person
+package com.example.choozi.ui.select_person
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -12,9 +12,9 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.boardgamerandomizer.ui.shared.AudioManager
-import com.example.boardgamerandomizer.ui.shared.FingerColors
-import com.example.boardgamerandomizer.ui.shared.FingerPoint
+import com.example.choozi.ui.shared.AudioManager
+import com.example.choozi.ui.shared.FingerColors
+import com.example.choozi.ui.shared.FingerPoint
 import kotlin.math.ceil
 import kotlin.math.hypot
 import kotlin.math.max

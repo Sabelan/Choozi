@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.select_person
+package com.example.choozi.ui.select_person
 
 import android.os.Bundle
 import android.util.Log
@@ -6,8 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.example.boardgamerandomizer.databinding.FragmentSelectPersonBinding
-import com.example.boardgamerandomizer.ui.shared.AudioPlayer
+import com.example.choozi.databinding.FragmentSelectPersonBinding
+import com.example.choozi.ui.shared.AudioPlayer
 
 class SelectPersonFragment : Fragment() {
 

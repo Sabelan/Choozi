@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.shared
+package com.example.choozi.ui.shared
 
 import android.graphics.Canvas
 import android.graphics.Color

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.select_person.SelectPersonFragment">
 
-    <com.example.boardgamerandomizer.ui.select_person.FingerSelectorView
+    <com.example.choozi.ui.select_person.FingerSelectorView
         android:id="@+id/fingerSelectorView"
         android:layout_width="0dp"
         android:layout_height="0dp"

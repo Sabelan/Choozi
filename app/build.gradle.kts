@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.boardgamerandomizer"
+    namespace = "com.example.choozi"
     compileSdk = 36
 
     defaultConfig {

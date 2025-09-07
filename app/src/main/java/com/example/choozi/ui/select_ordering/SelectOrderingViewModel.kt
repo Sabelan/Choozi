@@ -1,4 +1,4 @@
-package com.example.boardgamerandomizer.ui.select_ordering
+package com.example.choozi.ui.select_ordering
 
 import androidx.lifecycle.ViewModel
 

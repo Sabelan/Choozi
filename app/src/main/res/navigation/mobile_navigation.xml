@@ -7,19 +7,19 @@
 
     <fragment
         android:id="@+id/navigation_select_person"
-        android:name="com.example.boardgamerandomizer.ui.select_person.SelectPersonFragment"
+        android:name="com.example.choozi.ui.select_person.SelectPersonFragment"
         android:label="@string/title_select_person"
         tools:layout="@layout/fragment_select_person" />
 
     <fragment
         android:id="@+id/navigation_select_ordering"
-        android:name="com.example.boardgamerandomizer.ui.select_ordering.SelectOrderingFragment"
+        android:name="com.example.choozi.ui.select_ordering.SelectOrderingFragment"
         android:label="@string/title_select_ordering"
         tools:layout="@layout/fragment_select_ordering" />
 
     <fragment
         android:id="@+id/navigation_select_teams"
-        android:name="com.example.boardgamerandomizer.ui.select_teams.SelectTeamsFragment"
+        android:name="com.example.choozi.ui.select_teams.SelectTeamsFragment"
         android:label="@string/title_select_teams"
         tools:layout="@layout/fragment_team_select" />
 </navigation>
