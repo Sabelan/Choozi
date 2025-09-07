@@ -56,11 +56,6 @@ class SelectPersonFragment : Fragment() {
             resetButtonInstance.visibility = View.GONE
         }
 
-        // Optional: Listen to timer ticks if you need to update other UI
-        // fingerSelectorViewInstance.onTimerTickListener = { secondsRemaining ->
-        //    Log.d("FingerSelector", "HomeFragment - Seconds Remaining: $secondsRemaining")
-        // }
-
         resetButtonInstance.setOnClickListener {
             fingerSelectorViewInstance.resetSelectionProcess()
             resetButtonInstance.visibility = View.GONE // Hide reset button again
@@ -72,7 +67,6 @@ class SelectPersonFragment : Fragment() {
         // Important to prevent memory leaks with listeners, especially if FingerSelectorView could outlive the fragment's view
         binding.fingerSelectorView.onSelectionCompleteListener = null
         binding.fingerSelectorView.onTimerStartListener = null
-        binding.fingerSelectorView.onTimerTickListener = null
         _binding = null
         // Release charge audio player
         chargeAudioPlayer?.release()

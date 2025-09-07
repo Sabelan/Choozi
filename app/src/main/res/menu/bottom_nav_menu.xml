@@ -11,4 +11,9 @@
         android:icon="@drawable/people_ordering_icons"
         android:title="@string/title_select_ordering" />
 
+    <item
+        android:id="@+id/navigation_select_teams"
+        android:icon="@drawable/select_teams_icons"
+        android:title="@string/title_select_teams" />
+
 </menu>

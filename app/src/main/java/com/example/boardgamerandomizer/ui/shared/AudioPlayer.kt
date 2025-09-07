@@ -2,7 +2,6 @@ package com.example.boardgamerandomizer.ui.shared
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.net.Uri
 import androidx.annotation.RawRes
 import java.io.IOException
 
@@ -131,10 +130,8 @@ class AudioPlayer(private val context: Context) {
      */
     fun stop() {
         if (isPrepared) {
-            mediaPlayer?.stop()
-            isPrepared = false // After stop(), MediaPlayer needs to be prepared again.
-            // To simplify, we'll require re-loading the sound or calling prepare explicitly.
-            // For this utility, re-loading via loadSound() is the intended path after stop().
+            mediaPlayer?.pause()
+            mediaPlayer?.seekTo(0)
         }
     }
 

@@ -3,4 +3,5 @@
     <string name="app_name">Choozi</string>
     <string name="title_select_person">Select</string>
     <string name="title_select_ordering">Order</string>
+    <string name="title_select_teams">Teams</string>
 </resources>

@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.example.boardgamerandomizer.ui.select_ordering.FingerOrderingView
 import com.example.boardgamerandomizer.ui.shared.AudioPlayer
 import com.example.boardgamerandomizer.ui.shared.FingerColors
 import com.example.boardgamerandomizer.ui.shared.FingerPoint
@@ -33,14 +34,12 @@ class FingerSelectorView @JvmOverloads constructor(
     private var selectedFingerIndex: Int = -1
     private var countdownSeconds: Int = 0
     private var countDownProgress: Float? = null
-    private var fingerRadius: Float = 120f
     private var countDownTimer: CountDownTimer? = null
     private var timerRunning = false
     private var selectionDone = false
     private var isRevealAnimationRunning = false
 
     var onSelectionCompleteListener: (() -> Unit)? = null
-    var onTimerTickListener: ((secondsRemaining: Int) -> Unit)? = null
     var onTimerStartListener: (() -> Unit)? = null
 
     // Audio player for the charge sound - set up in the fragment
@@ -60,6 +59,14 @@ class FingerSelectorView @JvmOverloads constructor(
     private var revealAnimationRadius: Float = 0f
     private var maxRevealRadius: Float = 0f
 
+    companion object {
+        private const val TAG = "FingerSelectorView"
+        private const val COUNTDOWN_DURATION_SECONDS = 3
+        private const val COUNTDOWN_DURATION_MS = COUNTDOWN_DURATION_SECONDS * 1000L
+        private const val COUNTDOWN_INTERVAL_MS = 50L
+    }
+
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionDone || isRevealAnimationRunning) return false
 
@@ -72,22 +79,22 @@ class FingerSelectorView @JvmOverloads constructor(
                 val color = FingerColors.pickRandomColor(fingers)
                 fingers.add(FingerPoint(pointerId, x, y, color))
                 invalidate()
-                startSelectionTimer()
+                if (fingers.size >= 2) {
+                    startSelectionTimer()
+                }
                 return true
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (timerRunning) {
-                    for (i in 0 until event.pointerCount) {
-                        val pointerId = event.getPointerId(i)
-                        val finger = fingers.find { it.id == pointerId }
-                        finger?.let {
-                            it.x = event.getX(i)
-                            it.y = event.getY(i)
-                        }
+                for (i in 0 until event.pointerCount) {
+                    val pointerId = event.getPointerId(i)
+                    val finger = fingers.find { it.id == pointerId }
+                    finger?.let {
+                        it.x = event.getX(i)
+                        it.y = event.getY(i)
                     }
-                    invalidate()
                 }
+                invalidate()
                 return true
             }
 
@@ -95,9 +102,9 @@ class FingerSelectorView @JvmOverloads constructor(
                 val pointerIndex = event.actionIndex
                 val pointerId = event.getPointerId(pointerIndex)
                 fingers.removeAll { it.id == pointerId }
-                if (fingers.isEmpty() && timerRunning) {
+                if (fingers.size < 2 && timerRunning) {
                     cancelSelectionTimer()
-                } else if (fingers.isNotEmpty()) {
+                } else if (fingers.size >= 2) {
                     startSelectionTimer()
                 }
                 invalidate()
@@ -126,11 +133,10 @@ class FingerSelectorView @JvmOverloads constructor(
         onTimerStartListener?.invoke()
         timerRunning = true
         countdownSeconds = 3
-        countDownTimer = object : CountDownTimer(3000, 50) {
+        countDownTimer = object : CountDownTimer(COUNTDOWN_DURATION_MS, COUNTDOWN_INTERVAL_MS) {
             override fun onTick(millisUntilFinished: Long) {
-                countDownProgress = (3000 - millisUntilFinished) / 3000.0f
+                countDownProgress = 1f - (millisUntilFinished / COUNTDOWN_DURATION_MS.toFloat())
                 countdownSeconds = ceil(millisUntilFinished / 1000.0).toInt()
-                onTimerTickListener?.invoke(countdownSeconds)
                 invalidate()
             }
 
@@ -138,7 +144,6 @@ class FingerSelectorView @JvmOverloads constructor(
                 countdownSeconds = 0
                 timerRunning = false
                 selectRandomFingerAndAnimate()
-                onTimerTickListener?.invoke(0)
             }
         }.start()
     }
@@ -147,7 +152,8 @@ class FingerSelectorView @JvmOverloads constructor(
         countDownTimer?.cancel()
         timerRunning = false
         countdownSeconds = 0
-        onTimerTickListener?.invoke(-1)
+        countDownProgress = 0f
+        chargeAudioPlayer?.stop()
         invalidate()
     }
 
@@ -173,7 +179,12 @@ class FingerSelectorView @JvmOverloads constructor(
                 paint.color = getContrastingColor(selectedFinger.color)
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = 15f
-                canvas.drawCircle(selectedFinger.x, selectedFinger.y, fingerRadius + 10, paint)
+                canvas.drawCircle(
+                    selectedFinger.x,
+                    selectedFinger.y,
+                    selectedFinger.fingerRadius + 10,
+                    paint
+                )
                 paint.style = Paint.Style.FILL // Reset style
             }
         } else {
@@ -228,7 +239,10 @@ class FingerSelectorView @JvmOverloads constructor(
 
     private fun startRevealAnimation() {
         isRevealAnimationRunning = true
-        revealAnimationRadius = fingerRadius
+        if (selectedFingerIndex != -1 && fingers.indices.contains(selectedFingerIndex)) {
+            val selectedFinger = fingers[selectedFingerIndex]
+            revealAnimationRadius = selectedFinger.fingerRadius
+        }
 
         revealAnimator?.cancel()
         revealAnimator = ValueAnimator.ofFloat(revealAnimationRadius, maxRevealRadius).apply {
@@ -260,6 +274,7 @@ class FingerSelectorView @JvmOverloads constructor(
     }
 
     fun resetSelectionProcess() {
+        chargeAudioPlayer?.stop()
         revealAnimator?.cancel()
         countDownTimer?.cancel()
 
@@ -272,7 +287,6 @@ class FingerSelectorView @JvmOverloads constructor(
         maxRevealRadius = 0f
         countdownSeconds = 0
 
-        onTimerTickListener?.invoke(-1)
         invalidate()
     }
 

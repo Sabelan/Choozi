@@ -44,7 +44,6 @@ class FingerOrderingView @JvmOverloads constructor(
         null // Called when numbers assigned & animations START
     var onAllAnimationsCompleteListener: (() -> Unit)? =
         null // Called when ALL glow animations are DONE
-    var onTimerTickListener: ((secondsRemaining: Int) -> Unit)? = null
 
     // Audio player for the charge sound - set up in the fragment
     var chargeAudioPlayer: AudioPlayer? = null
@@ -115,11 +114,11 @@ class FingerOrderingView @JvmOverloads constructor(
                 activeFingers.removeAll { it.id == pointerId }
                 Log.d(TAG, "Removed finger $pointerId. Remaining: ${activeFingers.size}")
 
-                if (activeFingers.isEmpty() && selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
+                if (activeFingers.size < 2 && selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
                     // All fingers lifted *during* countdown or before selection is final
                     Log.d(TAG, "All fingers lifted before selection complete. Resetting process.")
                     internalResetProcess() // Resets the current attempt
-                } else if (activeFingers.isNotEmpty()) {
+                } else if (activeFingers.size >= 2) {
                     selectionProcessStarted = true
                     startCountdownTimer()
                 }
@@ -131,7 +130,7 @@ class FingerOrderingView @JvmOverloads constructor(
     }
 
     private fun startCountdownTimer() {
-        if (!activeFingers.isNotEmpty() || selectionComplete) return
+        if (activeFingers.size < 2 || selectionComplete) return
 
         val audioPlayer = chargeAudioPlayer
         if (audioPlayer != null) {
@@ -145,18 +144,13 @@ class FingerOrderingView @JvmOverloads constructor(
         }
         isCountingDown = true
         countdownSecondsRemaining = COUNTDOWN_DURATION_SECONDS
-        onTimerTickListener?.invoke(countdownSecondsRemaining) // Initial tick
         Log.d(TAG, "Starting countdown. Seconds: $countdownSecondsRemaining")
 
         countdownTimer?.cancel()
         countdownTimer = object : CountDownTimer(COUNTDOWN_DURATION_MS, COUNTDOWN_INTERVAL_MS) {
             override fun onTick(millisUntilFinished: Long) {
                 countDownProgress = 1f - (millisUntilFinished / COUNTDOWN_DURATION_MS.toFloat())
-                val seconds = ceil(millisUntilFinished / 1000.0).toInt()
-                if (seconds != countdownSecondsRemaining) {
-                    countdownSecondsRemaining = seconds
-                    onTimerTickListener?.invoke(countdownSecondsRemaining)
-                }
+                countdownSecondsRemaining = ceil(millisUntilFinished / 1000.0).toInt()
                 invalidate() // Keep invalidating for visual updates if any during tick
             }
 
@@ -164,7 +158,6 @@ class FingerOrderingView @JvmOverloads constructor(
                 Log.d(TAG, "Countdown Finished.")
                 isCountingDown = false
                 countdownSecondsRemaining = 0
-                onTimerTickListener?.invoke(0) // Final tick
                 invalidate() // Clear countdown text
 
                 if (activeFingers.isNotEmpty()) {
@@ -220,8 +213,8 @@ class FingerOrderingView @JvmOverloads constructor(
             fingerToAnimate.isGlowing = true
             fingerToAnimate.glowAnimationProgress = 0f
 
-            val animator = ValueAnimator.ofFloat(0f, 1.0f)
-                .apply { // Animate the *additional* radius
+            val animator =
+                ValueAnimator.ofFloat(0f, 1.0f).apply { // Animate the *additional* radius
                     duration = ANIMATION_DURATION_MS
                     interpolator = AccelerateDecelerateInterpolator()
                     addUpdateListener { animation ->
@@ -257,13 +250,13 @@ class FingerOrderingView @JvmOverloads constructor(
         val fingersToDraw = if (selectionComplete) assignedNumbersOrder else activeFingers
 
         val progressAtStart: Float? = countDownProgress
+        var glowAnimationProgressOverride: Float? = null
+        if (!selectionComplete && progressAtStart != null) {
+            glowAnimationProgressOverride = progressAtStart
+        }
         fingersToDraw.forEach { finger ->
             // Glow up to 20% of max glow during selection process.
-            var glowAnimationProgressOverride: Float? = null
-            if (!selectionComplete && progressAtStart != null) {
-                glowAnimationProgressOverride = progressAtStart / 2f
-            }
-            finger.draw(canvas, glowAnimationProgressOverride)
+            finger.draw(canvas, glowAnimationProgressOverride, glowMultiplier = 0.75f)
         }
 
         // Draw countdown timer text
@@ -279,6 +272,7 @@ class FingerOrderingView @JvmOverloads constructor(
     private fun internalResetProcess() {
         Log.d(TAG, "internalResetProcess called.")
         countdownTimer?.cancel()
+        chargeAudioPlayer?.stop()
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
             it.isGlowing = false
@@ -301,7 +295,6 @@ class FingerOrderingView @JvmOverloads constructor(
         currentAnimatingFingerIndex = -1
         countdownSecondsRemaining = 0
 
-        onTimerTickListener?.invoke(-1) // Signal reset to listeners
         invalidate()
     }
 

@@ -51,9 +51,4 @@ class SelectOrderingFragment : Fragment() {
         // Release AudioPlayer resources when the view is destroyed
         chargeAudioPlayer?.release()
     }
-
-    // Companion object from your code
-    companion object {
-        fun newInstance() = SelectOrderingFragment()
-    }
 }
