@@ -1,6 +1,7 @@
 package com.example.choozi.ui.shared
 
 import android.content.Context
+import android.content.ContextParams
 import android.media.MediaPlayer
 import android.util.Log
 import androidx.annotation.RawRes
@@ -8,11 +9,29 @@ import com.example.choozi.R
 import java.io.IOException
 
 class AudioManager(context: Context) {
-    private val buildUpPlayer: AudioPlayer = AudioPlayer(context).apply {
-        loadSound(R.raw.build_up, volume = 0.4f)
-    }
-    private var finalNotePlayer: AudioPlayer = AudioPlayer(context).apply {
-        loadSound(R.raw.final_bell)
+    private val buildUpPlayer: AudioPlayer
+
+    private var finalNotePlayer: AudioPlayer
+
+    init {
+        val attributedContext =
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                // For Android 12 (API 31) and above
+                val contextParams = ContextParams.Builder().setAttributionTag("audioPlayer").build()
+                context.createContext(contextParams)
+            } else {
+                // For older versions, attribution tags are not directly used this way
+                // but creating a specific context can still be good practice.
+                // However, for just AudioManager, the original context is usually fine.
+                // This specific error is more prominent on API 30+.
+                context
+            }
+        buildUpPlayer = AudioPlayer(attributedContext).apply {
+            loadSound(R.raw.build_up, volume = 0.4f)
+        }
+        finalNotePlayer = AudioPlayer(attributedContext).apply {
+            loadSound(R.raw.final_bell)
+        }
     }
 
     fun playBuildUp() {
@@ -92,17 +111,23 @@ class AudioPlayer(private val context: Context) {
             // it will return null or throw an exception.
             if (mediaPlayer == null) {
                 isPrepared = false
-                Log.d("AudioPlayer", "Failed to create MediaPlayer for resource ID: $soundResId")
+                Log.d(
+                    "AudioPlayer", "Failed to create MediaPlayer for resource ID: $soundResId"
+                )
                 onError?.invoke(IOException("Failed to create MediaPlayer for resource ID: $soundResId"))
             }
         } catch (e: Exception) {
             isPrepared = false
-            Log.d("AudioPlayer", "Failed to create MediaPlayer for resource ID: $soundResId")
+            Log.d(
+                "AudioPlayer", "Failed to create MediaPlayer for resource ID: $soundResId"
+            )
             onError?.invoke(e)
         }
 
         if (isPrepared && mediaPlayer != null) {
-            Log.d("AudioPlayer", "loadSound() for resource ID: $soundResId finished successfully")
+            Log.d(
+                "AudioPlayer", "loadSound() for resource ID: $soundResId finished successfully"
+            )
         }
     }
 
