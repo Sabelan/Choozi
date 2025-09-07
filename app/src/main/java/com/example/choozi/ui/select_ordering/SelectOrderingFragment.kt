@@ -5,16 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import com.example.choozi.databinding.FragmentSelectOrderingBinding
 
 class SelectOrderingFragment : Fragment() {
 
     private var _binding: FragmentSelectOrderingBinding? = null // For ViewBinding
     private val binding get() = _binding!!
-
-    // viewModel is already there from your provided code
-    private val viewModel: SelectOrderingViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?

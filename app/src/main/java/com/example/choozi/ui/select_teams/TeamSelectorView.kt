@@ -1,6 +1,7 @@
 package com.example.choozi.ui.select_teams
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -28,7 +29,7 @@ class TeamSelectorView @JvmOverloads constructor(
     private var selectionDone = false // True when teams are assigned & animation starts
     private var teamsAssignedAndAnimationsDone = false // True when team animations are complete
 
-    private var teamAnimationOrder: List<Int> = emptyList<Int>()
+    private var teamAnimationOrder: List<Int> = emptyList()
     private var teamAnimationIndex = -1
     var numberOfTeams: Int = 2 // Default to 2 teams
         set(value) {
@@ -67,6 +68,8 @@ class TeamSelectorView @JvmOverloads constructor(
         }
     }
 
+    // App is for multi-finger use only - not sure how to support click events
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionDone || teamsAssignedAndAnimationsDone) return false
 

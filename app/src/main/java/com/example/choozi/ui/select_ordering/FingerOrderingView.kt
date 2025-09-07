@@ -1,6 +1,7 @@
 package com.example.choozi.ui.select_ordering
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -56,16 +57,14 @@ class FingerOrderingView @JvmOverloads constructor(
         private const val ANIMATION_DURATION_MS = 500L
     }
 
+    // App is for multi-finger use only - not sure how to support click events
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionCompleteAndAnimationsDone) return true
 
         val action = event.actionMasked
         val pointerIndex = event.actionIndex
         val pointerId = event.getPointerId(pointerIndex)
-//        Log.d(
-//            TAG,
-//            "onTouchEvent: action=$action, pointerId=$pointerId, activeFingers=${activeFingers.size}, isCountingDown=$isCountingDown, selectionProcessStarted=$selectionProcessStarted"
-//        )
 
         when (action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {

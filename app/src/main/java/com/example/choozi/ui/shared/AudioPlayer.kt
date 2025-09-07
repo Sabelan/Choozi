@@ -76,7 +76,6 @@ class AudioManager(context: Context) {
 class AudioPlayer(private val context: Context) {
 
     private var mediaPlayer: MediaPlayer? = null
-    private var currentSoundResId: Int? = null
     private var isPrepared: Boolean = false
     private var currentSoundVolume: Float = 1.0f
 
@@ -91,7 +90,6 @@ class AudioPlayer(private val context: Context) {
     ) {
         release() // Release any existing MediaPlayer instance
 
-        currentSoundResId = soundResId
         isPrepared = false
         currentSoundVolume = volume
 
@@ -189,6 +187,5 @@ class AudioPlayer(private val context: Context) {
         mediaPlayer?.release()
         mediaPlayer = null
         isPrepared = false
-        currentSoundResId = null
     }
 }

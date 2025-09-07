@@ -5,7 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 
 object FingerColors {
-    val NEUTRAL = Color.LTGRAY // Neutral Finger Color
+    const val NEUTRAL = Color.LTGRAY // Neutral Finger Color
     val COLORS = listOf(
         Color.RED,
         Color.GREEN,
@@ -81,11 +81,6 @@ data class FingerPoint(
     var teamId: Int = -1, // For team assignment
 ) {
     companion object {
-        private val teamRevealPaint = Paint().apply { // For team reveal/color change
-            style = Paint.Style.FILL
-            isAntiAlias = true
-        }
-
         private val basePaint = Paint().apply {
             style = Paint.Style.FILL
             isAntiAlias = true

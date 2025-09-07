@@ -3,6 +3,7 @@ package com.example.choozi.ui.select_person
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -57,13 +58,13 @@ class FingerSelectorView @JvmOverloads constructor(
     private var maxRevealRadius: Float = 0f
 
     companion object {
-        private const val TAG = "FingerSelectorView"
         private const val COUNTDOWN_DURATION_SECONDS = 3
         private const val COUNTDOWN_DURATION_MS = COUNTDOWN_DURATION_SECONDS * 1000L
         private const val COUNTDOWN_INTERVAL_MS = 50L
     }
 
-
+    // App is for multi-finger use only - not sure how to support click events
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionDone || isRevealAnimationRunning) return false
 
@@ -254,7 +255,7 @@ class FingerSelectorView @JvmOverloads constructor(
                 }
 
                 override fun onAnimationCancel(animation: Animator) {
-                    isRevealAnimationRunning = false;
+                    isRevealAnimationRunning = false
                     // Optionally reset radius or snap to end based on desired behavior
                 }
             })
