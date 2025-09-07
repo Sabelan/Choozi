@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Board Game Randomizer"
+rootProject.name = "Choozi"
 include(":app")
