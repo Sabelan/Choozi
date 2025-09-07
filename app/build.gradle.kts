@@ -8,7 +8,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.boardgamerandomizer"
+        applicationId = "com.example.choozi"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
