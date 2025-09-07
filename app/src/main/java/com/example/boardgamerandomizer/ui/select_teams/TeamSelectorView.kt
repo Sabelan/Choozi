@@ -11,7 +11,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.boardgamerandomizer.ui.shared.AudioPlayer
+import com.example.boardgamerandomizer.ui.shared.AudioManager
 import com.example.boardgamerandomizer.ui.shared.FingerColors
 import com.example.boardgamerandomizer.ui.shared.FingerPoint
 import kotlin.math.ceil
@@ -21,10 +21,6 @@ class TeamSelectorView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val fingers = mutableListOf<FingerPoint>()
-    private val paint = Paint().apply {
-        style = Paint.Style.FILL
-        isAntiAlias = true
-    }
     private var countdownSeconds: Int = 0
     private var countDownProgress: Float? = null // For initial glow before selection
     private var countDownTimer: CountDownTimer? = null
@@ -50,7 +46,7 @@ class TeamSelectorView @JvmOverloads constructor(
     var onAllTeamAnimationsCompleteListener: (() -> Unit)? = null // All team animations finished
     var onTimerStartListener: (() -> Unit)? = null
 
-    var chargeAudioPlayer: AudioPlayer? = null // Re-use or use a new sound
+    private val audioManager = AudioManager(context)
     private val textPaint = Paint().apply {
         color = Color.WHITE
         textSize = 150f
@@ -118,10 +114,8 @@ class TeamSelectorView @JvmOverloads constructor(
 
                 if (fingers.isEmpty() && timerRunning) {
                     cancelSelectionTimer()
-                    chargeAudioPlayer?.stop()
                 } else if (fingers.size < numberOfTeams && timerRunning) {
                     cancelSelectionTimer() // Cancel if not enough for teams
-                    chargeAudioPlayer?.stop()
                     Log.d("TeamSelectorView", "Not enough fingers for teams, timer cancelled.")
                 } else {
                     possiblyStartSelectionProcess()
@@ -143,7 +137,7 @@ class TeamSelectorView @JvmOverloads constructor(
 
         cancelSelectionTimer() // Cancel previous timer
 
-        chargeAudioPlayer?.apply { if (isPlaying()) restart() else play() }
+        audioManager.playBuildUp()
         onTimerStartListener?.invoke()
         timerRunning = true
         countdownSeconds = 3 // Or your desired countdown
@@ -166,6 +160,7 @@ class TeamSelectorView @JvmOverloads constructor(
 
     private fun cancelSelectionTimer() {
         countDownTimer?.cancel()
+        audioManager.stopAny()
         timerRunning = false
         countdownSeconds = 0
         countDownProgress = null
@@ -179,7 +174,7 @@ class TeamSelectorView @JvmOverloads constructor(
             return
         }
         selectionDone = true // Mark that the initial selection (countdown) is done
-        chargeAudioPlayer?.stop() // Stop charge sound
+        audioManager.stopAny()
 
         // Shuffle fingers to randomize team assignment
         val shuffledFingers = fingers.shuffled()
@@ -208,13 +203,11 @@ class TeamSelectorView @JvmOverloads constructor(
             Log.d(
                 "TeamSelectorView", "Starting animation for team $teamToAnimate"
             )
+            // play the final note for each team
+            audioManager.playFinalNote()
             fingers.forEach { finger ->
                 finger.glowAnimationProgress = 0f
-                if (finger.teamId == teamToAnimate) {
-                    finger.isGlowing = true
-                } else {
-                    finger.isGlowing = false
-                }
+                finger.isGlowing = (finger.teamId == teamToAnimate)
             }
 
             val animator =
@@ -247,6 +240,7 @@ class TeamSelectorView @JvmOverloads constructor(
                 finger.glowAnimationProgress = 0f
                 finger.isGlowing = false
             }
+            audioManager.stopAny()
             onAllTeamAnimationsCompleteListener?.invoke()
             invalidate() // Final draw of the completed state
         }
@@ -275,7 +269,7 @@ class TeamSelectorView @JvmOverloads constructor(
     }
 
     fun resetSelectionProcess(clearFingers: Boolean = true) {
-        chargeAudioPlayer?.stop()
+        audioManager.stopAny()
         teamAnimationAnimator?.cancel()
         countDownTimer?.cancel()
 
@@ -299,6 +293,6 @@ class TeamSelectorView @JvmOverloads constructor(
         super.onDetachedFromWindow()
         countDownTimer?.cancel()
         teamAnimationAnimator?.cancel()
-        chargeAudioPlayer?.release() // Release if owned by the view
+        audioManager.release()
     }
 }

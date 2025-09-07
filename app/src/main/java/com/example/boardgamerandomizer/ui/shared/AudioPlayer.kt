@@ -2,8 +2,47 @@ package com.example.boardgamerandomizer.ui.shared
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.util.Log
 import androidx.annotation.RawRes
+import com.example.boardgamerandomizer.R
 import java.io.IOException
+
+class AudioManager(private val context: Context) {
+    private val buildUpPlayer: AudioPlayer = AudioPlayer(context).apply {
+        loadSound(R.raw.build_up, volume = 0.4f)
+    }
+    private var finalNotePlayer: AudioPlayer = AudioPlayer(context).apply {
+        loadSound(R.raw.final_bell)
+    }
+
+    fun playBuildUp() {
+        if (buildUpPlayer.isPlaying()) {
+            buildUpPlayer.restart()
+        } else {
+            buildUpPlayer.play()
+        }
+    }
+
+    fun playFinalNote() {
+        Log.d("AudioManager", "playFinalNote()")
+        if (finalNotePlayer.isPlaying()) {
+            finalNotePlayer.restart()
+        } else {
+            finalNotePlayer.play()
+        }
+    }
+
+    fun stopAny() {
+        Log.d("AudioManager", "stopAny()")
+        buildUpPlayer.stop()
+        finalNotePlayer.stop()
+    }
+
+    fun release() {
+        buildUpPlayer.release()
+        finalNotePlayer.release()
+    }
+}
 
 /**
  * A utility class for playing a single sound effect with restart functionality.
@@ -26,29 +65,25 @@ class AudioPlayer(private val context: Context) {
      * Loads a sound resource. If a sound is already loaded, it will be released first.
      *
      * @param soundResId The raw resource ID of the sound effect (e.g., R.raw.my_sound).
-     * @param onLoaded Optional callback invoked when the sound is successfully loaded and prepared.
-     * @param onError Optional callback invoked if an error occurs during loading or preparation.
      */
     fun loadSound(
-        @RawRes soundResId: Int,
-        onLoaded: (() -> Unit)? = null,
-        onError: ((Exception) -> Unit)? = null
+        @RawRes soundResId: Int, volume: Float = 1.0f, onError: ((Exception) -> Unit)? = null
+
     ) {
         release() // Release any existing MediaPlayer instance
 
         currentSoundResId = soundResId
         isPrepared = false
+        currentSoundVolume = volume
 
         try {
             mediaPlayer = MediaPlayer.create(context, soundResId)
-            mediaPlayer?.setOnPreparedListener {
-                isPrepared = true
-                setVolume(0.3f)
-                onLoaded?.invoke()
-            }
+            mediaPlayer?.setVolume(currentSoundVolume, currentSoundVolume)
+            isPrepared = true
             mediaPlayer?.setOnErrorListener { _, what, extra ->
                 isPrepared = false
                 val errorMessage = "MediaPlayer error - what: $what, extra: $extra"
+                Log.d("AudioPlayer", "MediaPlayer error: $errorMessage")
                 onError?.invoke(IOException(errorMessage))
                 true // True if the method handled the error, false if it didn't.
             }
@@ -57,23 +92,17 @@ class AudioPlayer(private val context: Context) {
             // it will return null or throw an exception.
             if (mediaPlayer == null) {
                 isPrepared = false
+                Log.d("AudioPlayer", "Failed to create MediaPlayer for resource ID: $soundResId")
                 onError?.invoke(IOException("Failed to create MediaPlayer for resource ID: $soundResId"))
             }
         } catch (e: Exception) {
             isPrepared = false
+            Log.d("AudioPlayer", "Failed to create MediaPlayer for resource ID: $soundResId")
             onError?.invoke(e)
         }
-    }
 
-    /**
-     * Sets the volume for the MediaPlayer.
-     *
-     * @param volume The volume level (0.0f to 1.0f). Values outside this range will be clamped.
-     */
-    fun setVolume(volume: Float) {
-        currentSoundVolume = volume.coerceIn(0.0f, 1.0f) // Ensure volume is within valid range
-        if (isPrepared) {
-            mediaPlayer?.setVolume(currentSoundVolume, currentSoundVolume)
+        if (isPrepared && mediaPlayer != null) {
+            Log.d("AudioPlayer", "loadSound() for resource ID: $soundResId finished successfully")
         }
     }
 
@@ -82,17 +111,13 @@ class AudioPlayer(private val context: Context) {
      * If the sound is already playing, it will continue.
      * If the sound is not prepared, this method does nothing.
      *
-     * @param onCompletion Optional callback invoked when the sound playback completes.
      */
-    fun play(onCompletion: (() -> Unit)? = null) {
+    fun play() {
         if (mediaPlayer?.isPlaying == true) {
             // Already playing, do nothing or you could choose to restart by calling restart()
             return
         }
         if (isPrepared) {
-            mediaPlayer?.setOnCompletionListener {
-                onCompletion?.invoke()
-            }
             mediaPlayer?.start()
         }
     }
@@ -102,24 +127,11 @@ class AudioPlayer(private val context: Context) {
      * If the sound is currently playing, it will be stopped and restarted.
      * If the sound is not prepared, this method does nothing.
      *
-     * @param onCompletion Optional callback invoked when the sound playback completes after restarting.
      */
-    fun restart(onCompletion: (() -> Unit)? = null) {
-        if (isPrepared) {
+    fun restart() {
+        if (isPrepared && isPlaying()) {
             mediaPlayer?.seekTo(0) // Go to the beginning
-            mediaPlayer?.setOnCompletionListener {
-                onCompletion?.invoke()
-            }
             mediaPlayer?.start()
-        }
-    }
-
-    /**
-     * Pauses the currently playing sound effect.
-     */
-    fun pause() {
-        if (mediaPlayer?.isPlaying == true) {
-            mediaPlayer?.pause()
         }
     }
 
@@ -129,7 +141,7 @@ class AudioPlayer(private val context: Context) {
      * Consider using pause() if you intend to resume later.
      */
     fun stop() {
-        if (isPrepared) {
+        if (isPrepared && isPlaying()) {
             mediaPlayer?.pause()
             mediaPlayer?.seekTo(0)
         }

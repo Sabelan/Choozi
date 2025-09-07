@@ -20,7 +20,6 @@ object FingerColors {
 //        Color.rgb(255, 105, 180), // Pink Rose -- too close to magenta
 //        Color.rgb(124, 252, 0), // Lawn Green / Bright Chartreuse
 //        Color.rgb(0, 255, 127), // Spring Green -- too close to green
-
     )
 
     private var colorIndex = 0

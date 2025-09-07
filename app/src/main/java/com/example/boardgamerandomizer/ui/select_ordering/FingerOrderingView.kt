@@ -11,7 +11,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.boardgamerandomizer.ui.shared.AudioPlayer
+import com.example.boardgamerandomizer.ui.shared.AudioManager
 import com.example.boardgamerandomizer.ui.shared.FingerColors
 import com.example.boardgamerandomizer.ui.shared.FingerPoint
 import kotlin.math.ceil
@@ -45,8 +45,8 @@ class FingerOrderingView @JvmOverloads constructor(
     var onAllAnimationsCompleteListener: (() -> Unit)? =
         null // Called when ALL glow animations are DONE
 
-    // Audio player for the charge sound - set up in the fragment
-    var chargeAudioPlayer: AudioPlayer? = null
+    // Audio Manager
+    private val audioManager: AudioManager = AudioManager(context)
 
     companion object {
         private const val TAG = "FingerOrderingView"
@@ -132,16 +132,7 @@ class FingerOrderingView @JvmOverloads constructor(
     private fun startCountdownTimer() {
         if (activeFingers.size < 2 || selectionComplete) return
 
-        val audioPlayer = chargeAudioPlayer
-        if (audioPlayer != null) {
-            if (audioPlayer.isPlaying()) {
-                audioPlayer.restart()
-            } else {
-                audioPlayer.play {
-                    Log.d("FingerOrderingView", "Starting selection sound playback completed.")
-                }
-            }
-        }
+        audioManager.playBuildUp()
         isCountingDown = true
         countdownSecondsRemaining = COUNTDOWN_DURATION_SECONDS
         Log.d(TAG, "Starting countdown. Seconds: $countdownSecondsRemaining")
@@ -212,6 +203,8 @@ class FingerOrderingView @JvmOverloads constructor(
             )
             fingerToAnimate.isGlowing = true
             fingerToAnimate.glowAnimationProgress = 0f
+            // play the final note for each finger
+            audioManager.playFinalNote()
 
             val animator =
                 ValueAnimator.ofFloat(0f, 1.0f).apply { // Animate the *additional* radius
@@ -272,7 +265,7 @@ class FingerOrderingView @JvmOverloads constructor(
     private fun internalResetProcess() {
         Log.d(TAG, "internalResetProcess called.")
         countdownTimer?.cancel()
-        chargeAudioPlayer?.stop()
+        audioManager.stopAny()
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
             it.isGlowing = false
@@ -317,5 +310,6 @@ class FingerOrderingView @JvmOverloads constructor(
         super.onDetachedFromWindow()
         Log.d(TAG, "onDetachedFromWindow")
         countdownTimer?.cancel()
+        audioManager.release()
     }
 }

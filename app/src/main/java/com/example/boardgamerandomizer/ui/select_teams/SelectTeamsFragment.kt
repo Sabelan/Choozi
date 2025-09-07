@@ -9,14 +9,11 @@ import android.widget.RadioButton
 import androidx.fragment.app.Fragment
 import com.example.boardgamerandomizer.R
 import com.example.boardgamerandomizer.databinding.FragmentTeamSelectBinding
-import com.example.boardgamerandomizer.ui.shared.AudioPlayer
 
 class SelectTeamsFragment : Fragment() {
 
     private var _binding: FragmentTeamSelectBinding? = null
     private val binding get() = _binding!!
-
-    private var chargeAudioPlayer: AudioPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,13 +30,7 @@ class SelectTeamsFragment : Fragment() {
     }
 
     private fun setupTeamSelectorView() {
-        Log.d("TeamSelectorFragment", "Setting up TeamSelectorView")
-
-        chargeAudioPlayer = AudioPlayer(requireContext()).apply {
-            loadSound(R.raw.charge_sound) // Or a new sound
-        }
-
-        binding.teamSelectorView.chargeAudioPlayer = chargeAudioPlayer
+        Log.d("SelectTeamsFragment", "Setting up TeamSelectorView")
         val resetButton = binding.selectTeamsResetButton
         val radioButtonGroup = binding.teamCountRadioGroup
 
@@ -83,7 +74,5 @@ class SelectTeamsFragment : Fragment() {
         binding.teamSelectorView.onTeamAssignmentCompleteListener = null
         binding.teamSelectorView.onAllTeamAnimationsCompleteListener = null
         _binding = null
-
-        chargeAudioPlayer?.release()
     }
 }
