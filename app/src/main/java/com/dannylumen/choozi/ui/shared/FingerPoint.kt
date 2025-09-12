@@ -1,4 +1,4 @@
-package com.example.choozi.ui.shared
+package com.dannylumen.choozi.ui.shared
 
 import android.graphics.Canvas
 import android.graphics.Color

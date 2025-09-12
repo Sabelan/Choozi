@@ -1,11 +1,11 @@
-package com.example.choozi.ui.shared
+package com.dannylumen.choozi.ui.shared
 
 import android.content.Context
 import android.content.ContextParams
 import android.media.MediaPlayer
 import android.util.Log
 import androidx.annotation.RawRes
-import com.example.choozi.R
+import com.dannylumen.choozi.R
 import java.io.IOException
 
 class AudioManager(context: Context) {

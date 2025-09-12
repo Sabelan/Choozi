@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.select_ordering.SelectOrderingFragment">
 
-    <com.example.choozi.ui.select_ordering.FingerOrderingView
+    <com.dannylumen.choozi.ui.select_ordering.FingerOrderingView
         android:id="@+id/fingerOrderingView"
         android:layout_width="0dp"
         android:layout_height="0dp"

@@ -1,4 +1,4 @@
-package com.example.choozi.ui.select_ordering
+package com.dannylumen.choozi.ui.select_ordering
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
@@ -12,9 +12,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import com.example.choozi.ui.shared.AudioManager
-import com.example.choozi.ui.shared.FingerColors
-import com.example.choozi.ui.shared.FingerPoint
+import com.dannylumen.choozi.ui.shared.AudioManager
+import com.dannylumen.choozi.ui.shared.FingerColors
+import com.dannylumen.choozi.ui.shared.FingerPoint
 import kotlin.math.ceil
 
 class FingerOrderingView @JvmOverloads constructor(

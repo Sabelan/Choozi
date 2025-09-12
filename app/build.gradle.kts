@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.choozi"
+    namespace = "com.dannylumen.choozi"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.choozi"
+        applicationId = "com.dannylumen.choozi"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

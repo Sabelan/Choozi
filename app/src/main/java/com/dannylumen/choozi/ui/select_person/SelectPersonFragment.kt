@@ -1,4 +1,4 @@
-package com.example.choozi.ui.select_person
+package com.dannylumen.choozi.ui.select_person
 
 import android.os.Bundle
 import android.util.Log
@@ -6,8 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.example.choozi.databinding.FragmentSelectPersonBinding
-import com.example.choozi.ui.shared.AudioPlayer
+import com.dannylumen.choozi.databinding.FragmentSelectPersonBinding
+import com.dannylumen.choozi.ui.shared.AudioPlayer
 
 class SelectPersonFragment : Fragment() {
 

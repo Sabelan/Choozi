@@ -1,4 +1,4 @@
-package com.example.choozi
+package com.dannylumen.choozi
 
 import org.junit.Test
 
