@@ -6,6 +6,17 @@ import android.graphics.Paint
 
 object FingerColors {
     const val NEUTRAL = Color.LTGRAY // Neutral Finger Color
+
+    // Limited set of team colors that have higher contrast
+    val TEAM_COLORS = listOf(
+        Color.RED,
+        Color.GREEN,
+        Color.BLUE,
+        Color.YELLOW,
+        Color.CYAN,
+        Color.MAGENTA,
+    )
+
     val COLORS = listOf(
         Color.RED,
         Color.GREEN,
@@ -13,10 +24,11 @@ object FingerColors {
         Color.YELLOW,
         Color.CYAN,
         Color.MAGENTA,
+        Color.WHITE,
         Color.rgb(255, 130, 50), // Dark orange
         Color.rgb(255, 165, 0), // Orange
-        Color.rgb(128, 0, 128), // Purple
         Color.rgb(255, 20, 147), // Deep Pink / Hot Pink
+//        Color.rgb(128, 0, 128), // Purple
 //        Color.rgb(255, 105, 180), // Pink Rose -- too close to magenta
 //        Color.rgb(124, 252, 0), // Lawn Green / Bright Chartreuse
 //        Color.rgb(0, 255, 127), // Spring Green -- too close to green

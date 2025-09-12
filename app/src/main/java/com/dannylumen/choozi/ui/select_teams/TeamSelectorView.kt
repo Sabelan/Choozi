@@ -181,7 +181,7 @@ class TeamSelectorView @JvmOverloads constructor(
 
         // Shuffle fingers to randomize team assignment
         val shuffledFingers = fingers.shuffled()
-        val shuffledColors = FingerColors.COLORS.shuffled()
+        val shuffledColors = FingerColors.TEAM_COLORS.shuffled()
         shuffledFingers.forEachIndexed { index, finger ->
             val teamId = index % numberOfTeams
             finger.teamId = teamId
