@@ -4,6 +4,10 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Shader
 import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.util.Log
@@ -22,25 +26,38 @@ class FingerOrderingView @JvmOverloads constructor(
     private val activeFingers = mutableListOf<FingerPoint>()
     private val assignedNumbersOrder = mutableListOf<FingerPoint>() // For animation sequence
 
+    // Precompute gradients so they aren't computed during onDraw
+    private val gradients = mutableListOf<LinearGradient>()
+
     private var countdownTimer: CountDownTimer? = null
     private var isCountingDown = false
     private var countDownProgress: Float? = null
-    private var selectionProcessStarted = false // Indicates if any finger has initiated the process
+    private var selectionProcessStarted = false
     private var selectionComplete = false
-    private var selectionCompleteAndAnimationsDone = false // Indicates final state is reached
+    private var selectionCompleteAndAnimationsDone = false
     private var currentAnimatingFingerIndex = -1
     private var countdownSecondsRemaining: Int = 0
 
     private val countdownTextPaint = UiUtils.getCountdownTextPaint(context)
 
-    // Listeners (from original FingerOrderingView)
-    var onSelectionCompleteListener: (() -> Unit)? =
-        null // Called when numbers assigned & animations START
-    var onAllAnimationsCompleteListener: (() -> Unit)? =
-        null // Called when ALL glow animations are DONE
+    // Listeners
+    var onSelectionCompleteListener: (() -> Unit)? = null
+    var onAllAnimationsCompleteListener: (() -> Unit)? = null
 
     // Audio Manager
     private val audioManager: AudioManager = AudioManager(context)
+
+    // For drawing lines
+    private val linePath = Path()
+    private val linePaint = Paint().apply {
+        strokeWidth = 20f // Adjust line thickness as needed
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        isAntiAlias = true
+    }
+    private var lineAnimationProgress = 0f // Progress of the entire line drawing animation
+    private var currentLineSegmentIndex = 0 // Which segment of the line is currently being animated
 
     companion object {
         private const val TAG = "FingerOrderingView"
@@ -48,6 +65,8 @@ class FingerOrderingView @JvmOverloads constructor(
         private const val COUNTDOWN_DURATION_MS = COUNTDOWN_DURATION_SECONDS * 1000L
         private const val COUNTDOWN_INTERVAL_MS = 50L
         private const val ANIMATION_DURATION_MS = 500L
+        private const val LINE_ANIMATION_DURATION_PER_SEGMENT_MS =
+            ANIMATION_DURATION_MS // We tie the line animation to the glow animation in time
     }
 
     // App is for multi-finger use only - not sure how to support click events
@@ -108,7 +127,7 @@ class FingerOrderingView @JvmOverloads constructor(
                 if (activeFingers.size < 2 && selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
                     // All fingers lifted *during* countdown or before selection is final
                     Log.d(TAG, "All fingers lifted before selection complete. Resetting process.")
-                    internalResetProcess() // Resets the current attempt
+                    internalResetProcess() // Resets the current selection process
                 } else if (activeFingers.size >= 2) {
                     selectionProcessStarted = true
                     startCountdownTimer()
@@ -133,14 +152,14 @@ class FingerOrderingView @JvmOverloads constructor(
             override fun onTick(millisUntilFinished: Long) {
                 countDownProgress = 1f - (millisUntilFinished / COUNTDOWN_DURATION_MS.toFloat())
                 countdownSecondsRemaining = ceil(millisUntilFinished / 1000.0).toInt()
-                invalidate() // Keep invalidating for visual updates if any during tick
+                invalidate()
             }
 
             override fun onFinish() {
                 Log.d(TAG, "Countdown Finished.")
                 isCountingDown = false
                 countdownSecondsRemaining = 0
-                invalidate() // Clear countdown text
+                invalidate()
 
                 if (activeFingers.isNotEmpty()) {
                     assignNumbersAndStartAnimations()
@@ -176,15 +195,30 @@ class FingerOrderingView @JvmOverloads constructor(
             }
         }
 
-        onSelectionCompleteListener?.invoke() // Numbers assigned, animations about to start
+        gradients.clear()
+        for (i in 0 until assignedNumbersOrder.size - 1) {
+            val p1 = assignedNumbersOrder[i]
+            val p2 = assignedNumbersOrder[i + 1]
+            gradients.add(
+                LinearGradient(
+                    p1.x, p1.y, p2.x, p2.y, p1.color, p2.color, Shader.TileMode.CLAMP
+                )
+            )
+        }
+
+        onSelectionCompleteListener?.invoke()
         selectionComplete = true
         countDownProgress = 0f
-        currentAnimatingFingerIndex = -1 // Reset for new animation sequence
-        invalidate() // Redraw to show numbers before animation
-        startNextGlowAnimation()
+        currentAnimatingFingerIndex = -1
+        // Reset line-animations
+        linePath.reset()
+        lineAnimationProgress = 0f
+        currentLineSegmentIndex = 0
+        invalidate()
+        startNextGlowAndLineAnimation()
     }
 
-    private fun startNextGlowAnimation() {
+    private fun startNextGlowAndLineAnimation() {
         currentAnimatingFingerIndex++
         if (currentAnimatingFingerIndex < assignedNumbersOrder.size) {
             val fingerToAnimate = assignedNumbersOrder[currentAnimatingFingerIndex]
@@ -197,49 +231,118 @@ class FingerOrderingView @JvmOverloads constructor(
             // play the final note for each finger
             audioManager.playFinalNote()
 
-            val animator =
-                ValueAnimator.ofFloat(0f, 1.0f).apply { // Animate the *additional* radius
-                    duration = ANIMATION_DURATION_MS
-                    interpolator = AccelerateDecelerateInterpolator()
-                    addUpdateListener { animation ->
-                        fingerToAnimate.glowAnimationProgress = animation.animatedValue as Float
+            // Start the line segment building to the finger
+            if (currentAnimatingFingerIndex < assignedNumbersOrder.size - 1) {
+                startLineSegmentAnimation(currentAnimatingFingerIndex)
+            }
+            val glowAnimator = ValueAnimator.ofFloat(0f, 1.0f).apply {
+                duration = ANIMATION_DURATION_MS
+                interpolator = AccelerateDecelerateInterpolator()
+                addUpdateListener { animation ->
+                    fingerToAnimate.glowAnimationProgress = animation.animatedValue as Float
+                    invalidate()
+                }
+                addListener(object : android.animation.AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: android.animation.Animator) {
+                        Log.d(TAG, "Glow Animation ended for finger ${fingerToAnimate.id}")
+                        fingerToAnimate.isGlowing = false
+                        fingerToAnimate.glowAnimationProgress = 0f
+                        startNextGlowAndLineAnimation() // For the first finger, just proceed to next glow
                         invalidate()
                     }
-                    addListener(object : android.animation.AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: android.animation.Animator) {
-                            Log.d(TAG, "Animation ended for finger ${fingerToAnimate.id}")
-                            fingerToAnimate.isGlowing = false
-                            fingerToAnimate.glowAnimationProgress = 0f
-                            invalidate()
-                            startNextGlowAnimation() // Trigger next animation
-                        }
-                    })
-                }
-            animator.start()
+                })
+            }
+            glowAnimator.start()
         } else {
-            Log.d(TAG, "All glow animations complete.")
+            Log.d(TAG, "All glow animations and line animations complete.")
             selectionCompleteAndAnimationsDone = true
             assignedNumbersOrder.forEach {
                 it.isGlowing = false
             } // Ensure all are marked as not animating
-            onAllAnimationsCompleteListener?.invoke()
-            invalidate() // Final draw of the completed state
+            onAllAnimationsCompleteListener?.invoke() // Moved to end of line animation sequence
+            invalidate()
         }
     }
+
+    private fun startLineSegmentAnimation(segmentIndex: Int) {
+        if (segmentIndex >= assignedNumbersOrder.size - 1) {
+            Log.d(
+                TAG,
+                "Incorrectly calling startLineSegmentAnimation with segment index $segmentIndex when there are only ${assignedNumbersOrder.size} fingers."
+            )
+            invalidate()
+            return
+        }
+
+        currentLineSegmentIndex = segmentIndex
+        val startFinger = assignedNumbersOrder[segmentIndex]
+        val endFinger = assignedNumbersOrder[segmentIndex + 1]
+
+        Log.d(
+            TAG,
+            "Starting line animation for segment $segmentIndex from finger ${startFinger.id} to ${endFinger.id}"
+        )
+
+        val lineAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = LINE_ANIMATION_DURATION_PER_SEGMENT_MS
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { animation ->
+                // This progress is for the current segment
+                // We'll use it to partially draw the current segment in onDraw
+                lineAnimationProgress = animation.animatedValue as Float
+                invalidate()
+            }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    Log.d(TAG, "Line segment $segmentIndex animation ended.")
+                    // Add the full segment to the path for redraws
+                    // The actual drawing of this full segment happens in onDraw
+                    // We just need to ensure lineAnimationProgress is 1 for this segment to be fully considered
+                    lineAnimationProgress = 1f // Ensure it's fully drawn
+                    invalidate()
+                }
+            })
+        }
+        lineAnimator.start()
+    }
+
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        if (selectionComplete && assignedNumbersOrder.size > 1) {
+            linePath.reset() // Reset path for each draw to handle animation progress
+
+            for (i in 0 until currentLineSegmentIndex + 1) { // Iterate up to and including the current animating segment
+                if (i >= assignedNumbersOrder.size - 1) break // Bounds check
+
+                val p1 = assignedNumbersOrder[i]
+                val p2 = assignedNumbersOrder[i + 1]
+
+                linePaint.shader = gradients[i]
+
+                if (i < currentLineSegmentIndex) { // Fully draw completed segments
+                    canvas.drawLine(p1.x, p1.y, p2.x, p2.y, linePaint)
+                } else if (i == currentLineSegmentIndex && lineAnimationProgress > 0f) {
+                    // Partially draw the current animating segment
+                    val currentX = p1.x + (p2.x - p1.x) * lineAnimationProgress
+                    val currentY = p1.y + (p2.y - p1.y) * lineAnimationProgress
+                    canvas.drawLine(p1.x, p1.y, currentX, currentY, linePaint)
+                }
+            }
+            linePaint.shader = null // Clear shader
+        }
+
+
         // Draw all active fingers (those still on screen or part of the selection)
         val fingersToDraw = if (selectionComplete) assignedNumbersOrder else activeFingers
-
         val progressAtStart: Float? = countDownProgress
         var glowAnimationProgressOverride: Float? = null
         if (!selectionComplete && progressAtStart != null) {
             glowAnimationProgressOverride = progressAtStart
         }
         fingersToDraw.forEach { finger ->
-            // Glow up to 20% of max glow during selection process.
+            // Glow up to 75% of max glow during selection process.
             finger.draw(canvas, glowAnimationProgressOverride, glowMultiplier = 0.75f)
         }
 
@@ -261,9 +364,9 @@ class FingerOrderingView @JvmOverloads constructor(
         assignedNumbersOrder.forEach {
             it.isGlowing = false
             it.glowAnimationProgress = 0f
-            it.assignedNumber = null // Clear assigned number if reset before completion
+            it.assignedNumber = null
         }
-        activeFingers.forEach { // Also clear numbers from active fingers not yet in assigned order
+        activeFingers.forEach {
             it.assignedNumber = null
         }
 
@@ -271,14 +374,14 @@ class FingerOrderingView @JvmOverloads constructor(
         selectionProcessStarted = false
         selectionComplete = false
 
-        // Don't clear activeFingers here, as some might still be on screen from the failed attempt.
-        // Let onTouchEvent handle their removal if they lift.
-        // If they stay, a new ACTION_DOWN (if all were lifted and one returns)
-        // or the existing fingers (if some remained) will try to restart the process.
         assignedNumbersOrder.clear()
         currentAnimatingFingerIndex = -1
         countdownSecondsRemaining = 0
 
+        // Reset line variables
+        linePath.reset()
+        lineAnimationProgress = 0f
+        currentLineSegmentIndex = 0
         invalidate()
     }
 
@@ -292,7 +395,6 @@ class FingerOrderingView @JvmOverloads constructor(
         activeFingers.clear()
         assignedNumbersOrder.clear()
         selectionCompleteAndAnimationsDone = false
-
         internalResetProcess()
         invalidate()
     }
