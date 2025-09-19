@@ -16,6 +16,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.ui.shared.AudioManager
 import com.dannylumen.choozi.ui.shared.FingerColors
 import com.dannylumen.choozi.ui.shared.FingerPoint
+import com.dannylumen.choozi.ui.shared.UiUtils
 import kotlin.math.ceil
 import kotlin.math.hypot
 import kotlin.math.max
@@ -42,12 +43,7 @@ class FingerSelectorView @JvmOverloads constructor(
     var onTimerStartListener: (() -> Unit)? = null
 
     private val audioManager: AudioManager = AudioManager(context)
-    private val textPaint = Paint().apply {
-        color = Color.WHITE
-        textSize = 150f
-        textAlign = Paint.Align.CENTER
-        isAntiAlias = true
-    }
+    private val countdownTextPaint = UiUtils.getCountdownTextPaint(context)
 
     private val revealPaint = Paint().apply {
         style = Paint.Style.FILL
@@ -170,10 +166,7 @@ class FingerSelectorView @JvmOverloads constructor(
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = 15f
                 canvas.drawCircle(
-                    selectedFinger.x,
-                    selectedFinger.y,
-                    selectedFinger.fingerRadius + 10,
-                    paint
+                    selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius + 10, paint
                 )
                 paint.style = Paint.Style.FILL // Reset style
             }
@@ -192,8 +185,9 @@ class FingerSelectorView @JvmOverloads constructor(
         if (timerRunning && !isRevealAnimationRunning && !selectionDone && countdownSeconds > 0) {
             val text = countdownSeconds.toString()
             val xPos = width / 2f
-            val yPos = (height / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
-            canvas.drawText(text, xPos, yPos, textPaint)
+            val yPos =
+                (height / 2f) - ((countdownTextPaint.descent() + countdownTextPaint.ascent()) / 2f)
+            canvas.drawText(text, xPos, yPos, countdownTextPaint)
         }
     }
 

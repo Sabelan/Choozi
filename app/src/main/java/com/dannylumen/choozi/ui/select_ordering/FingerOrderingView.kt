@@ -4,8 +4,6 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.util.Log
@@ -15,6 +13,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.ui.shared.AudioManager
 import com.dannylumen.choozi.ui.shared.FingerColors
 import com.dannylumen.choozi.ui.shared.FingerPoint
+import com.dannylumen.choozi.ui.shared.UiUtils
 import kotlin.math.ceil
 
 class FingerOrderingView @JvmOverloads constructor(
@@ -32,13 +31,7 @@ class FingerOrderingView @JvmOverloads constructor(
     private var currentAnimatingFingerIndex = -1
     private var countdownSecondsRemaining: Int = 0
 
-    private val countdownTextPaint = Paint().apply {
-        color = Color.WHITE
-        textSize = 150f
-        textAlign = Paint.Align.CENTER
-        isAntiAlias = true
-        setShadowLayer(20f, 2f, 2f, Color.BLACK)
-    }
+    private val countdownTextPaint = UiUtils.getCountdownTextPaint(context)
 
     // Listeners (from original FingerOrderingView)
     var onSelectionCompleteListener: (() -> Unit)? =

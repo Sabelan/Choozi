@@ -4,8 +4,6 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.util.Log
@@ -15,6 +13,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.ui.shared.AudioManager
 import com.dannylumen.choozi.ui.shared.FingerColors
 import com.dannylumen.choozi.ui.shared.FingerPoint
+import com.dannylumen.choozi.ui.shared.UiUtils
 import kotlin.math.ceil
 
 class TeamSelectorView @JvmOverloads constructor(
@@ -48,12 +47,7 @@ class TeamSelectorView @JvmOverloads constructor(
     var onTimerStartListener: (() -> Unit)? = null
 
     private val audioManager = AudioManager(context)
-    private val textPaint = Paint().apply {
-        color = Color.WHITE
-        textSize = 150f
-        textAlign = Paint.Align.CENTER
-        isAntiAlias = true
-    }
+    private val countdownTextPaint = UiUtils.getCountdownTextPaint(context)
 
     private var teamAnimationAnimator: ValueAnimator? = null
 
@@ -266,8 +260,9 @@ class TeamSelectorView @JvmOverloads constructor(
         if (timerRunning && !selectionDone && countdownSeconds > 0) {
             val text = countdownSeconds.toString()
             val xPos = width / 2f
-            val yPos = (height / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
-            canvas.drawText(text, xPos, yPos, textPaint)
+            val yPos =
+                (height / 2f) - ((countdownTextPaint.descent() + countdownTextPaint.ascent()) / 2f)
+            canvas.drawText(text, xPos, yPos, countdownTextPaint)
         }
     }
 

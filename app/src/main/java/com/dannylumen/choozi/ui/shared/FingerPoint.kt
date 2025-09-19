@@ -24,14 +24,10 @@ object FingerColors {
         Color.YELLOW,
         Color.CYAN,
         Color.MAGENTA,
-        Color.WHITE,
-        Color.rgb(255, 130, 50), // Dark orange
+        Color.rgb(0, 100, 0), // Dark Green
         Color.rgb(255, 165, 0), // Orange
-        Color.rgb(255, 20, 147), // Deep Pink / Hot Pink
-//        Color.rgb(128, 0, 128), // Purple
-//        Color.rgb(255, 105, 180), // Pink Rose -- too close to magenta
-//        Color.rgb(124, 252, 0), // Lawn Green / Bright Chartreuse
-//        Color.rgb(0, 255, 127), // Spring Green -- too close to green
+        Color.rgb(255, 100, 20), // Darker orange
+        Color.rgb(128, 0, 128), // Purple
     )
 
     private var colorIndex = 0
