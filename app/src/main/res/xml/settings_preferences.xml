@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/settings_audio_section_title">
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="@string/settings_mute_key"
+            app:summary="@string/settings_mute_summary"
+            app:title="@string/settings_mute_title" />
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory app:title="@string/settings_display_section_title">
+
+        <ListPreference
+            app:defaultValue="system"
+            app:entries="@array/theme_entries"
+            app:entryValues="@array/theme_values"
+            app:key="@string/settings_theme_key"
+            app:summary="@string/settings_theme_summary"
+            app:title="@string/settings_theme_title" />
+
+    </PreferenceCategory>
+</PreferenceScreen>

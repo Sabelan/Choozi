@@ -4,5 +4,26 @@
     <string name="title_select_person">Select</string>
     <string name="title_select_ordering">Order</string>
     <string name="title_select_teams">Teams</string>
+    <string name="title_settings">Settings</string>
     <string name="attribution_audio_player_label">Audio</string>
+    <!-- Audio Settings -->
+    <string name="settings_mute_key">mute_audio_settings_key</string>
+    <string name="settings_audio_section_title">Audio</string>
+    <string name="settings_mute_summary">Silence all sounds in the app</string>
+    <string name="settings_mute_title">Mute</string>
+    <!-- Display Settings -->
+    <string name="settings_theme_key">theme_settings_key</string>
+    <string name="settings_display_section_title">Display</string>
+    <string name="settings_theme_title">Theme</string>
+    <string name="settings_theme_summary">Choose how the app looks</string>
+    <string-array name="theme_entries">
+        <item>System (Default)</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="theme_values">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
 </resources>

@@ -22,4 +22,10 @@
         android:name="com.dannylumen.choozi.ui.select_teams.SelectTeamsFragment"
         android:label="@string/title_select_teams"
         tools:layout="@layout/fragment_team_select" />
+
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="com.dannylumen.choozi.ui.settings.SettingsFragment"
+        android:label="@string/title_settings"
+        tools:layout="@layout/fragment_settings" />
 </navigation>

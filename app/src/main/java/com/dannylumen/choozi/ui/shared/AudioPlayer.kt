@@ -136,6 +136,11 @@ class AudioPlayer(private val context: Context) {
      *
      */
     fun play() {
+        // If audio is muted in settings don't do anything.
+        if (SettingsManager.isAudioMuted(context)) {
+            return
+        }
+
         if (mediaPlayer?.isPlaying == true) {
             // Already playing, do nothing or you could choose to restart by calling restart()
             return
