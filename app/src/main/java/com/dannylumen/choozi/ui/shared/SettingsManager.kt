@@ -18,6 +18,26 @@ object SettingsManager {
     }
 
     /**
+     * Reads the mute music setting value from SharedPreferences.
+     * @return true if audio is muted or false if not.
+     */
+    fun isMusicMuted(context: Context): Boolean {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val muteKey = context.getString(R.string.settings_mute_music_key)
+        return sharedPreferences.getBoolean(muteKey, false)
+    }
+
+    /**
+     * Reads the mute selection setting value from SharedPreferences.
+     * @return true if audio is muted or false if not.
+     */
+    fun isSelectionMuted(context: Context): Boolean {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val muteKey = context.getString(R.string.settings_mute_selection_key)
+        return sharedPreferences.getBoolean(muteKey, false)
+    }
+
+    /**
      * Reads the stored theme value from SharedPreferences.
      * @return The saved theme value ("system", "light", or "dark").
      */

@@ -7,10 +7,19 @@
     <string name="title_settings">Settings</string>
     <string name="attribution_audio_player_label">Audio</string>
     <!-- Audio Settings -->
-    <string name="settings_mute_key">mute_audio_settings_key</string>
     <string name="settings_audio_section_title">Audio</string>
+    <!-- Mute everything -->
+    <string name="settings_mute_key">mute_audio_settings_key</string>
     <string name="settings_mute_summary">Silence all sounds in the app</string>
-    <string name="settings_mute_title">Mute</string>
+    <string name="settings_mute_title">Mute All</string>
+    <!-- Mute just music -->
+    <string name="settings_mute_music_key">mute_music_settings_key</string>
+    <string name="settings_mute_music_summary">Mute the build up music</string>
+    <string name="settings_mute_music_title">Mute Music</string>
+    <!-- Mute just selection sound -->
+    <string name="settings_mute_selection_key">mute_selection_settings_key</string>
+    <string name="settings_mute_selection_summary">Mute the selection sound</string>
+    <string name="settings_mute_selection_title">Mute Selection Sound</string>
     <!-- Display Settings -->
     <string name="settings_theme_key">theme_settings_key</string>
     <string name="settings_display_section_title">Display</string>

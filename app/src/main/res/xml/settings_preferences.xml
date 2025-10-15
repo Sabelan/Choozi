@@ -7,7 +7,16 @@
             app:key="@string/settings_mute_key"
             app:summary="@string/settings_mute_summary"
             app:title="@string/settings_mute_title" />
-
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="@string/settings_mute_music_key"
+            app:summary="@string/settings_mute_music_summary"
+            app:title="@string/settings_mute_music_title" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="@string/settings_mute_selection_key"
+            app:summary="@string/settings_mute_selection_summary"
+            app:title="@string/settings_mute_selection_title" />
     </PreferenceCategory>
 
 

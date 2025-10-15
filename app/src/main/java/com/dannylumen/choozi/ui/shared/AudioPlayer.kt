@@ -8,7 +8,7 @@ import androidx.annotation.RawRes
 import com.dannylumen.choozi.R
 import java.io.IOException
 
-class AudioManager(context: Context) {
+class AudioManager(private val context: Context) {
     private val buildUpPlayer: AudioPlayer
 
     private var finalNotePlayer: AudioPlayer
@@ -35,6 +35,10 @@ class AudioManager(context: Context) {
     }
 
     fun playBuildUp() {
+        if (SettingsManager.isMusicMuted(context)) {
+            return
+        }
+
         if (buildUpPlayer.isPlaying()) {
             buildUpPlayer.restart()
         } else {
@@ -43,6 +47,10 @@ class AudioManager(context: Context) {
     }
 
     fun playFinalNote() {
+        if (SettingsManager.isSelectionMuted(context)) {
+            return
+        }
+
 //        Log.d("AudioManager", "playFinalNote()")
         if (finalNotePlayer.isPlaying()) {
             finalNotePlayer.restart()
