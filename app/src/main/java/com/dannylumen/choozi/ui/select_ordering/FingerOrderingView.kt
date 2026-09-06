@@ -14,6 +14,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.dannylumen.choozi.theme.CannonballBurstAnimation
+import com.dannylumen.choozi.theme.SelectionAnimationEffect
+import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
 import com.dannylumen.choozi.ui.shared.FingerColors
 import com.dannylumen.choozi.ui.shared.FingerPoint
@@ -43,9 +46,19 @@ class FingerOrderingView @JvmOverloads constructor(
     // Listeners
     var onSelectionCompleteListener: (() -> Unit)? = null
     var onAllAnimationsCompleteListener: (() -> Unit)? = null
+    var onInteractionStateChangeListener: ((hasFingers: Boolean, isEndState: Boolean) -> Unit)? = null
+    var onActiveFingerCountChangedListener: ((fingerCount: Int, isEndState: Boolean) -> Unit)? = null
+
+    private fun notifyActiveFingerCountChanged() {
+        val count = activeFingers.size
+        val isEndState = selectionComplete || selectionCompleteAndAnimationsDone
+        onActiveFingerCountChangedListener?.invoke(count, isEndState)
+        onInteractionStateChangeListener?.invoke(count > 0, isEndState)
+    }
 
     // Audio Manager
     private val audioManager: AudioManager = AudioManager(context)
+    private val cannonballBurstAnimation = CannonballBurstAnimation()
 
     // For drawing lines
     private val linePath = Path()
@@ -87,11 +100,14 @@ class FingerOrderingView @JvmOverloads constructor(
                 val y = event.getY(pointerIndex)
 
                 if (activeFingers.find { it.id == pointerId } == null) {
+                    val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+                    val sprite = currentTheme.getSpriteForFinger(activeFingers.size)
                     activeFingers.add(
                         FingerPoint(
-                            pointerId, x, y, color = FingerColors.pickRandomColor(activeFingers)
+                            pointerId, x, y, color = FingerColors.pickRandomColor(activeFingers), themeSprite = sprite
                         )
                     )
+                    notifyActiveFingerCountChanged()
                     Log.d(TAG, "Added finger $pointerId. Count: ${activeFingers.size}")
                     if (activeFingers.isNotEmpty()) {
                         selectionProcessStarted = true
@@ -118,19 +134,34 @@ class FingerOrderingView @JvmOverloads constructor(
                 return true
             }
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_POINTER_UP -> {
                 if (selectionComplete) return true
 
                 activeFingers.removeAll { it.id == pointerId }
+                notifyActiveFingerCountChanged()
                 Log.d(TAG, "Removed finger $pointerId. Remaining: ${activeFingers.size}")
 
                 if (activeFingers.size < 2 && selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
-                    // All fingers lifted *during* countdown or before selection is final
-                    Log.d(TAG, "All fingers lifted before selection complete. Resetting process.")
+                    // Less than 2 fingers during countdown or before selection is final
+                    Log.d(TAG, "Fingers < 2 before selection complete. Resetting process.")
                     internalResetProcess() // Resets the current selection process
                 } else if (activeFingers.size >= 2) {
                     selectionProcessStarted = true
                     startCountdownTimer()
+                }
+                invalidate()
+                return true
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (selectionComplete) return true
+
+                activeFingers.clear()
+                Log.d(TAG, "All fingers lifted or cancelled.")
+                if (selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
+                    internalResetProcess()
+                } else {
+                    notifyActiveFingerCountChanged()
                 }
                 invalidate()
                 return true
@@ -156,6 +187,7 @@ class FingerOrderingView @JvmOverloads constructor(
             }
 
             override fun onFinish() {
+                Log.d("SelectionTiming", "FingerOrdering countdown finished at ${System.currentTimeMillis()} ms")
                 Log.d(TAG, "Countdown Finished.")
                 isCountingDown = false
                 countdownSecondsRemaining = 0
@@ -208,6 +240,7 @@ class FingerOrderingView @JvmOverloads constructor(
 
         onSelectionCompleteListener?.invoke()
         selectionComplete = true
+        notifyActiveFingerCountChanged()
         countDownProgress = 0f
         currentAnimatingFingerIndex = -1
         // Reset line-animations
@@ -230,6 +263,13 @@ class FingerOrderingView @JvmOverloads constructor(
             fingerToAnimate.glowAnimationProgress = 0f
             // play the final note for each finger
             audioManager.playFinalNote()
+
+            val currentTheme = ThemeManager.getCurrentTheme(context)
+            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS) {
+                cannonballBurstAnimation.start(fingerToAnimate.x, fingerToAnimate.y, fingerToAnimate.fingerRadius) {
+                    invalidate()
+                }
+            }
 
             // Start the line segment building to the finger
             if (currentAnimatingFingerIndex < assignedNumbersOrder.size - 1) {
@@ -254,8 +294,10 @@ class FingerOrderingView @JvmOverloads constructor(
             }
             glowAnimator.start()
         } else {
+            Log.d("SelectionTiming", "FingerOrdering selection animations complete at ${System.currentTimeMillis()} ms")
             Log.d(TAG, "All glow animations and line animations complete.")
             selectionCompleteAndAnimationsDone = true
+            notifyActiveFingerCountChanged()
             assignedNumbersOrder.forEach {
                 it.isGlowing = false
             } // Ensure all are marked as not animating
@@ -310,6 +352,12 @@ class FingerOrderingView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+        currentTheme.background?.draw(context, canvas, width, height)
+        if (currentTheme.background?.isAnimated == true || currentTheme.hasAnimatedSprites) {
+            postInvalidateOnAnimation()
+        }
+
         if (selectionComplete && assignedNumbersOrder.size > 1) {
             linePath.reset() // Reset path for each draw to handle animation progress
 
@@ -343,7 +391,13 @@ class FingerOrderingView @JvmOverloads constructor(
         }
         fingersToDraw.forEach { finger ->
             // Glow up to 75% of max glow during selection process.
-            finger.draw(canvas, glowAnimationProgressOverride, glowMultiplier = 0.75f)
+            finger.draw(canvas, glowAnimationProgressOverride, glowMultiplier = 0.75f, context = context)
+        }
+
+        // Draw cannonball burst animation if active
+        if (cannonballBurstAnimation.isRunning) {
+            cannonballBurstAnimation.draw(context, canvas)
+            postInvalidateOnAnimation()
         }
 
         // Draw countdown timer text
@@ -359,6 +413,7 @@ class FingerOrderingView @JvmOverloads constructor(
     private fun internalResetProcess() {
         Log.d(TAG, "internalResetProcess called.")
         countdownTimer?.cancel()
+        cannonballBurstAnimation.cancel()
         audioManager.stopAny()
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
@@ -382,6 +437,7 @@ class FingerOrderingView @JvmOverloads constructor(
         linePath.reset()
         lineAnimationProgress = 0f
         currentLineSegmentIndex = 0
+        notifyActiveFingerCountChanged()
         invalidate()
     }
 
@@ -396,13 +452,28 @@ class FingerOrderingView @JvmOverloads constructor(
         assignedNumbersOrder.clear()
         selectionCompleteAndAnimationsDone = false
         internalResetProcess()
+        notifyActiveFingerCountChanged()
         invalidate()
+    }
+
+    private val themeChangeListener = {
+        invalidate()
+        if (com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context).background?.isAnimated == true) {
+            postInvalidateOnAnimation()
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        com.dannylumen.choozi.theme.ThemeManager.addThemeChangeListener(themeChangeListener)
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         Log.d(TAG, "onDetachedFromWindow")
+        com.dannylumen.choozi.theme.ThemeManager.removeThemeChangeListener(themeChangeListener)
         countdownTimer?.cancel()
+        cannonballBurstAnimation.cancel()
         audioManager.release()
     }
 }

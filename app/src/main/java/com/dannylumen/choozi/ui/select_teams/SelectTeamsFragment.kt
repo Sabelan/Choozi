@@ -61,6 +61,10 @@ class SelectTeamsFragment : Fragment() {
             resetButton.visibility = View.VISIBLE
         }
 
+        binding.teamSelectorView.onActiveFingerCountChangedListener = { fingerCount, isEndState ->
+            (activity as? com.dannylumen.choozi.MainActivity)?.setThemeFabVisible(fingerCount == 0 && !isEndState)
+        }
+
         resetButton.setOnClickListener {
             binding.teamSelectorView.resetSelectionProcess()
             resetButton.visibility = View.GONE
@@ -73,6 +77,8 @@ class SelectTeamsFragment : Fragment() {
         binding.teamSelectorView.onTimerStartListener = null
         binding.teamSelectorView.onTeamAssignmentCompleteListener = null
         binding.teamSelectorView.onAllTeamAnimationsCompleteListener = null
+        binding.teamSelectorView.onInteractionStateChangeListener = null
+        binding.teamSelectorView.onActiveFingerCountChangedListener = null
         _binding = null
     }
 }

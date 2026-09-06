@@ -70,4 +70,23 @@ object SettingsManager {
         AppCompatDelegate.setDefaultNightMode(mode)
     }
 
+    /**
+     * Reads the stored theme pack value from SharedPreferences.
+     * @return The saved theme pack id, defaulting to "default".
+     */
+    fun getThemePackId(context: Context): String {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val key = context.getString(R.string.settings_theme_pack_key)
+        return sharedPreferences.getString(key, "default") ?: "default"
+    }
+
+    /**
+     * Stores the selected theme pack id into SharedPreferences.
+     */
+    fun setThemePackId(context: Context, themePackId: String) {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val key = context.getString(R.string.settings_theme_pack_key)
+        sharedPreferences.edit().putString(key, themePackId).apply()
+    }
 }
+

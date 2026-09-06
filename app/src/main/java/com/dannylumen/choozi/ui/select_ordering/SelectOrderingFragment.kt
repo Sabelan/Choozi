@@ -32,10 +32,16 @@ class SelectOrderingFragment : Fragment() {
         fingerOrderingView.onAllAnimationsCompleteListener = {
             resetButtonInstance.visibility = View.VISIBLE
         }
+
+        fingerOrderingView.onActiveFingerCountChangedListener = { fingerCount, isEndState ->
+            (activity as? com.dannylumen.choozi.MainActivity)?.setThemeFabVisible(fingerCount == 0 && !isEndState)
+        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        binding.fingerOrderingView.onInteractionStateChangeListener = null
+        binding.fingerOrderingView.onActiveFingerCountChangedListener = null
         _binding = null // Clear ViewBinding reference
     }
 }

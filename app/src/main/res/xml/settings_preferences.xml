@@ -23,6 +23,12 @@
     <PreferenceCategory app:title="@string/settings_display_section_title">
 
         <ListPreference
+            app:defaultValue="default"
+            app:key="@string/settings_theme_pack_key"
+            app:title="@string/settings_theme_pack_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
             app:defaultValue="system"
             app:entries="@array/theme_entries"
             app:entryValues="@array/theme_values"

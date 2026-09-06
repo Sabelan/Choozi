@@ -21,10 +21,13 @@
     <string name="settings_mute_selection_summary">Mute the selection sound</string>
     <string name="settings_mute_selection_title">Mute Selection Sound</string>
     <!-- Display Settings -->
+    <string name="settings_theme_pack_key">theme_pack_settings_key</string>
+    <string name="settings_theme_pack_title">Theme Pack</string>
+    <string name="settings_theme_pack_summary">Select a theme with custom music, sounds, and sprites</string>
     <string name="settings_theme_key">theme_settings_key</string>
     <string name="settings_display_section_title">Display</string>
-    <string name="settings_theme_title">Theme</string>
-    <string name="settings_theme_summary">Choose how the app looks</string>
+    <string name="settings_theme_title">Dark Mode / Appearance</string>
+    <string name="settings_theme_summary">Choose system, light, or dark appearance</string>
     <string-array name="theme_entries">
         <item>System (Default)</item>
         <item>Light</item>
@@ -35,4 +38,5 @@
         <item>light</item>
         <item>dark</item>
     </string-array>
+    <string name="select_theme">Select Theme</string>
 </resources>

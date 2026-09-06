@@ -12,7 +12,24 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_preferences, rootKey)
-        // Find the theme preference by its key
+        // --- Theme Pack preference logic ---
+        val themePackPreference: ListPreference? =
+            findPreference(getString(R.string.settings_theme_pack_key))
+        val availableThemes = com.dannylumen.choozi.theme.ThemeManager.getAvailableThemes()
+        themePackPreference?.entries = availableThemes.map { it.displayName }.toTypedArray()
+        themePackPreference?.entryValues = availableThemes.map { it.id }.toTypedArray()
+        if (themePackPreference?.value == null) {
+            themePackPreference?.value = com.dannylumen.choozi.theme.ThemeManager.DEFAULT_THEME_ID
+        }
+
+        themePackPreference?.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, newValue ->
+                val themeId = newValue as String
+                com.dannylumen.choozi.theme.ThemeManager.setCurrentTheme(requireContext(), themeId)
+                true
+            }
+
+        // Find the theme preference (light/dark mode) by its key
         val themePreference: ListPreference? =
             findPreference(getString(R.string.settings_theme_key))
 

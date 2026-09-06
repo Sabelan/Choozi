@@ -10,9 +10,13 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.os.CountDownTimer
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.dannylumen.choozi.theme.CannonballBurstAnimation
+import com.dannylumen.choozi.theme.SelectionAnimationEffect
+import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
 import com.dannylumen.choozi.ui.shared.FingerColors
 import com.dannylumen.choozi.ui.shared.FingerPoint
@@ -41,6 +45,15 @@ class FingerSelectorView @JvmOverloads constructor(
 
     var onSelectionCompleteListener: (() -> Unit)? = null
     var onTimerStartListener: (() -> Unit)? = null
+    var onInteractionStateChangeListener: ((hasFingers: Boolean, isEndState: Boolean) -> Unit)? = null
+    var onActiveFingerCountChangedListener: ((fingerCount: Int, isEndState: Boolean) -> Unit)? = null
+
+    private fun notifyActiveFingerCountChanged() {
+        val count = fingers.size
+        val isEndState = selectionDone || isRevealAnimationRunning
+        onActiveFingerCountChangedListener?.invoke(count, isEndState)
+        onInteractionStateChangeListener?.invoke(count > 0, isEndState)
+    }
 
     private val audioManager: AudioManager = AudioManager(context)
     private val countdownTextPaint = UiUtils.getCountdownTextPaint(context)
@@ -52,6 +65,7 @@ class FingerSelectorView @JvmOverloads constructor(
     private var revealAnimator: ValueAnimator? = null
     private var revealAnimationRadius: Float = 0f
     private var maxRevealRadius: Float = 0f
+    private val cannonballBurstAnimation = CannonballBurstAnimation()
 
     companion object {
         private const val COUNTDOWN_DURATION_SECONDS = 3
@@ -71,7 +85,10 @@ class FingerSelectorView @JvmOverloads constructor(
                 val x = event.getX(pointerIndex)
                 val y = event.getY(pointerIndex)
                 val color = FingerColors.pickRandomColor(fingers)
-                fingers.add(FingerPoint(pointerId, x, y, color))
+                val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+                val sprite = currentTheme.getSpriteForFinger(fingers.size)
+                fingers.add(FingerPoint(pointerId, x, y, color, themeSprite = sprite))
+                notifyActiveFingerCountChanged()
                 invalidate()
                 if (fingers.size >= 2) {
                     startSelectionTimer()
@@ -92,14 +109,25 @@ class FingerSelectorView @JvmOverloads constructor(
                 return true
             }
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_POINTER_UP -> {
                 val pointerIndex = event.actionIndex
                 val pointerId = event.getPointerId(pointerIndex)
                 fingers.removeAll { it.id == pointerId }
+                notifyActiveFingerCountChanged()
                 if (fingers.size < 2 && timerRunning) {
                     cancelSelectionTimer()
                 } else if (fingers.size >= 2) {
                     startSelectionTimer()
+                }
+                invalidate()
+                return true
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                fingers.clear()
+                notifyActiveFingerCountChanged()
+                if (timerRunning) {
+                    cancelSelectionTimer()
                 }
                 invalidate()
                 return true
@@ -110,9 +138,9 @@ class FingerSelectorView @JvmOverloads constructor(
 
     private fun startSelectionTimer() {
         if (selectionDone || isRevealAnimationRunning) return
-        // Cancel previous timer
+        // Cancel previous timer without stopping ongoing audio
         if (timerRunning) {
-            cancelSelectionTimer()
+            countDownTimer?.cancel()
         }
         audioManager.playBuildUp()
         onTimerStartListener?.invoke()
@@ -126,6 +154,7 @@ class FingerSelectorView @JvmOverloads constructor(
             }
 
             override fun onFinish() {
+                Log.d("SelectionTiming", "Countdown finished at ${System.currentTimeMillis()} ms -> triggering playFinalNote and selectRandomFingerAndAnimate")
                 countdownSeconds = 0
                 timerRunning = false
                 audioManager.playFinalNote()
@@ -146,6 +175,12 @@ class FingerSelectorView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+        currentTheme.background?.draw(context, canvas, width, height)
+        if (currentTheme.background?.isAnimated == true || currentTheme.hasAnimatedSprites) {
+            postInvalidateOnAnimation()
+        }
+
         if (isRevealAnimationRunning || selectionDone) {
             // --- Reveal Animation or Final State ---
             if (selectedFingerIndex != -1 && fingers.indices.contains(selectedFingerIndex)) {
@@ -159,7 +194,7 @@ class FingerSelectorView @JvmOverloads constructor(
 
                 // NOW, ONLY DRAW THE SELECTED FINGER ON TOP OF THE REVEAL
                 paint.color = selectedFinger.color // The selected finger's actual color
-                selectedFinger.draw(canvas)
+                selectedFinger.draw(canvas, context = context)
 
                 // And its highlight ring
                 paint.color = getContrastingColor(selectedFinger.color)
@@ -169,6 +204,12 @@ class FingerSelectorView @JvmOverloads constructor(
                     selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius + 10, paint
                 )
                 paint.style = Paint.Style.FILL // Reset style
+
+                // Draw cannonball burst animation if active
+                if (cannonballBurstAnimation.isRunning) {
+                    cannonballBurstAnimation.draw(context, canvas)
+                    postInvalidateOnAnimation()
+                }
             }
         } else {
             val progressAtStart = countDownProgress
@@ -177,7 +218,7 @@ class FingerSelectorView @JvmOverloads constructor(
                 if (!isRevealAnimationRunning && progressAtStart != null) {
                     glowAnimationProgressOverride = progressAtStart
                 }
-                finger.draw(canvas, glowAnimationProgressOverride)
+                finger.draw(canvas, glowAnimationProgressOverride, context = context)
             }
         }
 
@@ -222,10 +263,19 @@ class FingerSelectorView @JvmOverloads constructor(
     }
 
     private fun startRevealAnimation() {
+        Log.d("SelectionTiming", "startRevealAnimation started at ${System.currentTimeMillis()} ms, selectedFingerIndex=$selectedFingerIndex")
         isRevealAnimationRunning = true
+        notifyActiveFingerCountChanged()
         if (selectedFingerIndex != -1 && fingers.indices.contains(selectedFingerIndex)) {
             val selectedFinger = fingers[selectedFingerIndex]
             revealAnimationRadius = selectedFinger.fingerRadius
+
+            val currentTheme = ThemeManager.getCurrentTheme(context)
+            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS) {
+                cannonballBurstAnimation.start(selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius) {
+                    invalidate()
+                }
+            }
         }
 
         revealAnimator?.cancel()
@@ -239,8 +289,10 @@ class FingerSelectorView @JvmOverloads constructor(
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
+                    Log.d("SelectionTiming", "Selection reveal animation finished at ${System.currentTimeMillis()} ms")
                     isRevealAnimationRunning = false
                     selectionDone = true
+                    notifyActiveFingerCountChanged()
                     // Ensure the final radius covers everything
                     revealAnimationRadius = maxRevealRadius
                     countDownProgress = 0f
@@ -250,6 +302,7 @@ class FingerSelectorView @JvmOverloads constructor(
 
                 override fun onAnimationCancel(animation: Animator) {
                     isRevealAnimationRunning = false
+                    notifyActiveFingerCountChanged()
                     // Optionally reset radius or snap to end based on desired behavior
                 }
             })
@@ -260,6 +313,7 @@ class FingerSelectorView @JvmOverloads constructor(
     fun resetSelectionProcess() {
         audioManager.stopAny()
         revealAnimator?.cancel()
+        cannonballBurstAnimation.cancel()
         countDownTimer?.cancel()
 
         fingers.clear()
@@ -270,14 +324,29 @@ class FingerSelectorView @JvmOverloads constructor(
         revealAnimationRadius = 0f
         maxRevealRadius = 0f
         countdownSeconds = 0
+        notifyActiveFingerCountChanged()
 
         invalidate()
     }
 
+    private val themeChangeListener = {
+        invalidate()
+        if (com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context).background?.isAnimated == true) {
+            postInvalidateOnAnimation()
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        com.dannylumen.choozi.theme.ThemeManager.addThemeChangeListener(themeChangeListener)
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        com.dannylumen.choozi.theme.ThemeManager.removeThemeChangeListener(themeChangeListener)
         audioManager.release()
         countDownTimer?.cancel()
         revealAnimator?.cancel()
+        cannonballBurstAnimation.cancel()
     }
 }

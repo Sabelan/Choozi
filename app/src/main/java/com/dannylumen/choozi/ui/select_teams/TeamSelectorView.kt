@@ -10,6 +10,9 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.dannylumen.choozi.theme.CannonballBurstAnimation
+import com.dannylumen.choozi.theme.SelectionAnimationEffect
+import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
 import com.dannylumen.choozi.ui.shared.FingerColors
 import com.dannylumen.choozi.ui.shared.FingerPoint
@@ -21,6 +24,7 @@ class TeamSelectorView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val fingers = mutableListOf<FingerPoint>()
+    private val cannonballBurstAnimation = CannonballBurstAnimation()
     private var countdownSeconds: Int = 0
     private var countDownProgress: Float? = null // For initial glow before selection
     private var countDownTimer: CountDownTimer? = null
@@ -45,6 +49,15 @@ class TeamSelectorView @JvmOverloads constructor(
     var onTeamAssignmentCompleteListener: (() -> Unit)? = null // Teams assigned, animation starts
     var onAllTeamAnimationsCompleteListener: (() -> Unit)? = null // All team animations finished
     var onTimerStartListener: (() -> Unit)? = null
+    var onInteractionStateChangeListener: ((hasFingers: Boolean, isEndState: Boolean) -> Unit)? = null
+    var onActiveFingerCountChangedListener: ((fingerCount: Int, isEndState: Boolean) -> Unit)? = null
+
+    private fun notifyActiveFingerCountChanged() {
+        val count = fingers.size
+        val isEndState = selectionDone || teamsAssignedAndAnimationsDone
+        onActiveFingerCountChangedListener?.invoke(count, isEndState)
+        onInteractionStateChangeListener?.invoke(count > 0, isEndState)
+    }
 
     private val audioManager = AudioManager(context)
     private val countdownTextPaint = UiUtils.getCountdownTextPaint(context)
@@ -77,11 +90,14 @@ class TeamSelectorView @JvmOverloads constructor(
                 val y = event.getY(pointerIndex)
 
                 // ALL FINGERS ARE NEUTRAL COLOR INITIALLY
+                val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+                val sprite = currentTheme.getSpriteForFinger(fingers.size)
                 fingers.add(
                     FingerPoint(
-                        pointerId, x, y, FingerColors.NEUTRAL
+                        pointerId, x, y, FingerColors.NEUTRAL, themeSprite = sprite
                     )
                 )
+                notifyActiveFingerCountChanged()
                 invalidate()
                 possiblyStartSelectionProcess()
                 return true
@@ -102,12 +118,13 @@ class TeamSelectorView @JvmOverloads constructor(
                 return true
             }
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_POINTER_UP -> {
                 if (selectionDone) return true // Don't remove if selection already happened
 
                 val pointerIndex = event.actionIndex
                 val pointerId = event.getPointerId(pointerIndex)
                 fingers.removeAll { it.id == pointerId }
+                notifyActiveFingerCountChanged()
 
                 if (fingers.isEmpty() && timerRunning) {
                     cancelSelectionTimer()
@@ -117,6 +134,18 @@ class TeamSelectorView @JvmOverloads constructor(
                 } else {
                     possiblyStartSelectionProcess()
                 }
+                invalidate()
+                return true
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (selectionDone) return true
+
+                fingers.clear()
+                if (timerRunning) {
+                    cancelSelectionTimer()
+                }
+                notifyActiveFingerCountChanged()
                 invalidate()
                 return true
             }
@@ -132,7 +161,7 @@ class TeamSelectorView @JvmOverloads constructor(
             return
         }
 
-        cancelSelectionTimer() // Cancel previous timer
+        countDownTimer?.cancel() // Cancel previous timer without stopping ongoing audio
 
         audioManager.playBuildUp()
         onTimerStartListener?.invoke()
@@ -146,6 +175,7 @@ class TeamSelectorView @JvmOverloads constructor(
             }
 
             override fun onFinish() {
+                Log.d("SelectionTiming", "TeamSelector countdown finished at ${System.currentTimeMillis()} ms")
                 countdownSeconds = 0
                 timerRunning = false
                 countDownProgress = 1f // Full progress for glow
@@ -171,7 +201,7 @@ class TeamSelectorView @JvmOverloads constructor(
             return
         }
         selectionDone = true // Mark that the initial selection (countdown) is done
-        audioManager.stopAny()
+        notifyActiveFingerCountChanged()
 
         // Shuffle fingers to randomize team assignment
         val shuffledFingers = fingers.shuffled()
@@ -202,6 +232,16 @@ class TeamSelectorView @JvmOverloads constructor(
             )
             // play the final note for each team
             audioManager.playFinalNote()
+
+            val currentTheme = ThemeManager.getCurrentTheme(context)
+            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS) {
+                fingers.filter { it.teamId == teamToAnimate }.forEach { finger ->
+                    cannonballBurstAnimation.start(finger.x, finger.y, finger.fingerRadius) {
+                        invalidate()
+                    }
+                }
+            }
+
             fingers.forEach { finger ->
                 finger.glowAnimationProgress = 0f
                 finger.isGlowing = (finger.teamId == teamToAnimate)
@@ -231,8 +271,10 @@ class TeamSelectorView @JvmOverloads constructor(
                 }
             animator.start()
         } else {
+            Log.d("SelectionTiming", "TeamSelector selection animations complete at ${System.currentTimeMillis()} ms")
             Log.d("TeamSelectorView", "All glow animations complete.")
             teamsAssignedAndAnimationsDone = true
+            notifyActiveFingerCountChanged()
             fingers.forEach { finger ->
                 finger.glowAnimationProgress = 0f
                 finger.isGlowing = false
@@ -247,13 +289,25 @@ class TeamSelectorView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+        currentTheme.background?.draw(context, canvas, width, height)
+        if (currentTheme.background?.isAnimated == true || currentTheme.hasAnimatedSprites) {
+            postInvalidateOnAnimation()
+        }
+
         var initialGlowProgress: Float? = null
         if (timerRunning && !selectionDone && countDownProgress != null) {
             initialGlowProgress = countDownProgress
         }
         fingers.forEach { finger ->
             // If countdown is running and selection isn't done, apply a slight glow based on countDownProgress
-            finger.draw(canvas, initialGlowProgress) // Pass the initial glow
+            finger.draw(canvas, initialGlowProgress, context = context) // Pass the initial glow
+        }
+
+        // Draw cannonball burst animation if active
+        if (cannonballBurstAnimation.isRunning) {
+            cannonballBurstAnimation.draw(context, canvas)
+            postInvalidateOnAnimation()
         }
 
         // Draw countdown timer text
@@ -268,6 +322,7 @@ class TeamSelectorView @JvmOverloads constructor(
 
     fun resetSelectionProcess(clearFingers: Boolean = true) {
         audioManager.stopAny()
+        cannonballBurstAnimation.cancel()
         teamAnimationAnimator?.cancel()
         countDownTimer?.cancel()
 
@@ -282,15 +337,30 @@ class TeamSelectorView @JvmOverloads constructor(
         timerRunning = false
         countdownSeconds = 0
         countDownProgress = null
+        notifyActiveFingerCountChanged()
 
         invalidate()
         Log.d("TeamSelectorView", "Selection process reset.")
     }
 
+    private val themeChangeListener = {
+        invalidate()
+        if (com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context).background?.isAnimated == true) {
+            postInvalidateOnAnimation()
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        com.dannylumen.choozi.theme.ThemeManager.addThemeChangeListener(themeChangeListener)
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        com.dannylumen.choozi.theme.ThemeManager.removeThemeChangeListener(themeChangeListener)
         countDownTimer?.cancel()
         teamAnimationAnimator?.cancel()
+        cannonballBurstAnimation.cancel()
         audioManager.release()
     }
 }

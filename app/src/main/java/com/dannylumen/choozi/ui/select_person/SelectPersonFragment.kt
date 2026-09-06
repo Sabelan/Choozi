@@ -42,6 +42,7 @@ class SelectPersonFragment : Fragment() {
         // Set the listener for when selection is complete
         fingerSelectorViewInstance.onSelectionCompleteListener = {
             // This block is executed when a finger is selected after the timer
+            Log.d("SelectionTiming", "Selection finished (onSelectionCompleteListener) at ${System.currentTimeMillis()} ms")
             Log.d("HomeFragment", "onSelectionComplete triggered! Setting resetButton VISIBLE.")
             resetButtonInstance.visibility = View.VISIBLE
         }
@@ -49,6 +50,10 @@ class SelectPersonFragment : Fragment() {
         // Optional: Listen to timer start to hide the reset button if it was visible
         fingerSelectorViewInstance.onTimerStartListener = {
             resetButtonInstance.visibility = View.GONE
+        }
+
+        fingerSelectorViewInstance.onActiveFingerCountChangedListener = { fingerCount, isEndState ->
+            (activity as? com.dannylumen.choozi.MainActivity)?.setThemeFabVisible(fingerCount == 0 && !isEndState)
         }
 
         resetButtonInstance.setOnClickListener {
@@ -62,6 +67,8 @@ class SelectPersonFragment : Fragment() {
         // Important to prevent memory leaks with listeners, especially if FingerSelectorView could outlive the fragment's view
         binding.fingerSelectorView.onSelectionCompleteListener = null
         binding.fingerSelectorView.onTimerStartListener = null
+        binding.fingerSelectorView.onInteractionStateChangeListener = null
+        binding.fingerSelectorView.onActiveFingerCountChangedListener = null
         _binding = null
         // Release charge audio player
         chargeAudioPlayer?.release()

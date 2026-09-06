@@ -1,5 +1,6 @@
 package com.dannylumen.choozi.ui.shared
 
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -87,6 +88,7 @@ data class FingerPoint(
     var revealRadius: Float = 0f,
 
     var teamId: Int = -1, // For team assignment
+    var themeSprite: com.dannylumen.choozi.theme.ThemeSprite? = null,
 ) {
     companion object {
         private val basePaint = Paint().apply {
@@ -97,6 +99,10 @@ data class FingerPoint(
             style = Paint.Style.STROKE // Or FILL if you prefer a different glow style
             isAntiAlias = true
         }
+        private val badgePaint = Paint().apply {
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
         private val textPaint = Paint().apply { // For assignedNumber
             color = Color.BLACK // Default, will be set to contrasting
             textSize = 60f // Example, can be configured
@@ -105,8 +111,13 @@ data class FingerPoint(
         }
     }
 
-    fun draw(canvas: Canvas, countDownProgress: Float? = null, glowMultiplier: Float = 1f) {
-        // 1. Draw the main finger circle
+    fun draw(
+        canvas: Canvas,
+        countDownProgress: Float? = null,
+        glowMultiplier: Float = 1f,
+        context: Context? = null
+    ) {
+        // 1. Draw the main finger circle (serves as the glowing background behind the sprite)
         basePaint.color = this.color
         canvas.drawCircle(x, y, fingerRadius, basePaint)
 
@@ -120,13 +131,6 @@ data class FingerPoint(
                 val strobesComplete = (countDownProgress / strobeRate).toInt()
                 val maxStrobeGlowRadius = (strobesComplete + 1) * strobeRate * maxGlowRadiusOffset
                 val strobeProgress = (countDownProgress % strobeRate) / strobeRate
-//                Log.d(
-//                    "FingerPoint",
-//                    """"Strobe situation: Total percent complete ${countDownProgress * 100}
-//                        |which means a total of $strobesComplete should've already happened,
-//                        |the current strobe's max strobe radius is $maxStrobeGlowRadius,
-//                        |and the progress within the current strobe is $strobeProgress""".trimMargin()
-//                )
                 glowPaint.strokeWidth = maxStrobeGlowRadius * strobeProgress * glowMultiplier
             } else {
                 glowAnimationProgress = countDownProgress ?: this.glowAnimationProgress
@@ -136,10 +140,21 @@ data class FingerPoint(
             canvas.drawCircle(x, y, fingerRadius, glowPaint)
         }
 
-        // 3. Draw assigned number (specific to FingerOrderingView, but harmless if number is null)
+        // 3. Draw Theme Sprite on top of the circle if available
+        if (themeSprite != null && context != null) {
+            themeSprite?.draw(context, canvas, x, y, fingerRadius, seed = this.id)
+        }
+
+        // 4. Draw assigned number (specific to FingerOrderingView, but harmless if number is null)
         assignedNumber?.let {
-            textPaint.color = FingerColors.getContrastingColor(this.color)
-            // Adjust text size based on baseFingerRadius if needed
+            if (themeSprite != null) {
+                // Draw a high-contrast badge behind number so it's clearly readable over sprites
+                badgePaint.color = Color.argb(190, 0, 0, 0)
+                canvas.drawCircle(x, y, fingerRadius * 0.45f, badgePaint)
+                textPaint.color = Color.WHITE
+            } else {
+                textPaint.color = FingerColors.getContrastingColor(this.color)
+            }
             textPaint.textSize = fingerRadius * 0.6f
             val textY = y - ((textPaint.descent() + textPaint.ascent()) / 2f)
             canvas.drawText(it.toString(), x, textY, textPaint)
