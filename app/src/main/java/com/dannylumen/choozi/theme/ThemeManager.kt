@@ -103,7 +103,7 @@ object ThemeManager {
                 buildUpAudioAsset = "themes/pirate/saber_and_saltwater_short.mp3",
                 finalAudioAsset = "themes/pirate/final_long.mp3",
                 buildUpVolume = 0.5f,
-                finalAudioVolume = 0.8f,
+                finalAudioVolume = 0.6f,
                 background = ThemeBackground(
                     effect = BackgroundEffect.OCEAN_WAVES
                 ),
