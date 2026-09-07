@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.dannylumen.choozi.databinding.FragmentSelectPersonBinding
 import com.dannylumen.choozi.ui.shared.AudioPlayer
+import com.dannylumen.choozi.ui.shared.AutoResetController
 
 class SelectPersonFragment : Fragment() {
 
@@ -17,6 +18,7 @@ class SelectPersonFragment : Fragment() {
     private val binding get() = _binding!!
 
     var chargeAudioPlayer: AudioPlayer? = null
+    private var autoResetController: AutoResetController? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,16 +41,26 @@ class SelectPersonFragment : Fragment() {
         val fingerSelectorViewInstance = binding.fingerSelectorView
         val resetButtonInstance = binding.selectPersonResetButton
 
+        val controller = AutoResetController(
+            button = resetButtonInstance,
+            onReset = {
+                fingerSelectorViewInstance.resetSelectionProcess()
+                resetButtonInstance.visibility = View.GONE
+            }
+        )
+        autoResetController = controller
+
         // Set the listener for when selection is complete
         fingerSelectorViewInstance.onSelectionCompleteListener = {
             // This block is executed when a finger is selected after the timer
             Log.d("SelectionTiming", "Selection finished (onSelectionCompleteListener) at ${System.currentTimeMillis()} ms")
             Log.d("HomeFragment", "onSelectionComplete triggered! Setting resetButton VISIBLE.")
-            resetButtonInstance.visibility = View.VISIBLE
+            controller.startAutoReset(requireContext())
         }
 
         // Optional: Listen to timer start to hide the reset button if it was visible
         fingerSelectorViewInstance.onTimerStartListener = {
+            controller.cancel()
             resetButtonInstance.visibility = View.GONE
         }
 
@@ -57,13 +69,14 @@ class SelectPersonFragment : Fragment() {
         }
 
         resetButtonInstance.setOnClickListener {
-            fingerSelectorViewInstance.resetSelectionProcess()
-            resetButtonInstance.visibility = View.GONE // Hide reset button again
+            controller.performReset()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        autoResetController?.cancel()
+        autoResetController = null
         // Important to prevent memory leaks with listeners, especially if FingerSelectorView could outlive the fragment's view
         binding.fingerSelectorView.onSelectionCompleteListener = null
         binding.fingerSelectorView.onTimerStartListener = null

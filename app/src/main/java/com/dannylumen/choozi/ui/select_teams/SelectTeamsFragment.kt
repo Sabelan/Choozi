@@ -9,11 +9,13 @@ import android.widget.RadioButton
 import androidx.fragment.app.Fragment
 import com.dannylumen.choozi.R
 import com.dannylumen.choozi.databinding.FragmentTeamSelectBinding
+import com.dannylumen.choozi.ui.shared.AutoResetController
 
 class SelectTeamsFragment : Fragment() {
 
     private var _binding: FragmentTeamSelectBinding? = null
     private val binding get() = _binding!!
+    private var autoResetController: AutoResetController? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,7 +36,18 @@ class SelectTeamsFragment : Fragment() {
         val resetButton = binding.selectTeamsResetButton
         val radioButtonGroup = binding.teamCountRadioGroup
 
+        val controller = AutoResetController(
+            button = resetButton,
+            onReset = {
+                binding.teamSelectorView.resetSelectionProcess()
+                resetButton.visibility = View.GONE
+                radioButtonGroup.visibility = View.VISIBLE
+            }
+        )
+        autoResetController = controller
+
         radioButtonGroup.setOnCheckedChangeListener { group, checkedId ->
+            controller.cancel()
             val selectedRadioButton = view?.findViewById<RadioButton>(checkedId)
             when (selectedRadioButton?.id) {
                 R.id.radioTwoTeams -> binding.teamSelectorView.numberOfTeams = 2
@@ -45,9 +58,9 @@ class SelectTeamsFragment : Fragment() {
             binding.teamSelectorView.possiblyStartSelectionProcess()
         }
 
-
         binding.teamSelectorView.onTimerStartListener = {
             Log.d("TeamSelectorFragment", "Timer Started")
+            controller.cancel()
             resetButton.visibility = View.GONE
         }
 
@@ -58,7 +71,7 @@ class SelectTeamsFragment : Fragment() {
 
         binding.teamSelectorView.onAllTeamAnimationsCompleteListener = {
             Log.d("TeamSelectorFragment", "All team animations complete.")
-            resetButton.visibility = View.VISIBLE
+            controller.startAutoReset(requireContext())
         }
 
         binding.teamSelectorView.onActiveFingerCountChangedListener = { fingerCount, isEndState ->
@@ -66,14 +79,14 @@ class SelectTeamsFragment : Fragment() {
         }
 
         resetButton.setOnClickListener {
-            binding.teamSelectorView.resetSelectionProcess()
-            resetButton.visibility = View.GONE
-            radioButtonGroup.visibility = View.VISIBLE
+            controller.performReset()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        autoResetController?.cancel()
+        autoResetController = null
         binding.teamSelectorView.onTimerStartListener = null
         binding.teamSelectorView.onTeamAssignmentCompleteListener = null
         binding.teamSelectorView.onAllTeamAnimationsCompleteListener = null

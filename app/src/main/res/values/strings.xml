@@ -40,6 +40,26 @@
     </string-array>
     <string name="select_theme">Select Theme</string>
 
+    <string name="reset_button_with_countdown">Reset\n%1$ds</string>
+
+    <!-- Gameplay Settings -->
+    <string name="settings_gameplay_section_title">Gameplay</string>
+    <string name="settings_auto_reset_key">auto_reset_settings_key</string>
+    <string name="settings_auto_reset_title">Auto Reset</string>
+    <string name="settings_auto_reset_summary">Automatically reset after selection completes</string>
+    <string-array name="auto_reset_entries">
+        <item>None</item>
+        <item>5s</item>
+        <item>10s</item>
+        <item>15s</item>
+    </string-array>
+    <string-array name="auto_reset_values">
+        <item>none</item>
+        <item>5s</item>
+        <item>10s</item>
+        <item>15s</item>
+    </string-array>
+
     <!-- Accessibility Settings -->
     <string name="settings_accessibility_section_title">Accessibility</string>
     <string name="settings_sticky_fingers_key">sticky_fingers_settings_key</string>

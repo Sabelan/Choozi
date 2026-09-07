@@ -215,8 +215,27 @@ class FingerOrderingView @JvmOverloads constructor(
 
             val currentTheme = ThemeManager.getCurrentTheme(context)
             if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS) {
-                cannonballBurstAnimation.start(fingerToAnimate.x, fingerToAnimate.y, fingerToAnimate.fingerRadius) {
-                    invalidate()
+                if (currentAnimatingFingerIndex < assignedNumbersOrder.size - 1) {
+                    val nextFinger = assignedNumbersOrder[currentAnimatingFingerIndex + 1]
+                    cannonballBurstAnimation.startTargeted(
+                        originX = fingerToAnimate.x,
+                        originY = fingerToAnimate.y,
+                        targetX = nextFinger.x,
+                        targetY = nextFinger.y,
+                        fingerRadius = fingerToAnimate.fingerRadius,
+                        durationMs = ANIMATION_DURATION_MS
+                    ) {
+                        invalidate()
+                    }
+                } else {
+                    // Shoot cannonballs in all directions for the last ship in the chain
+                    cannonballBurstAnimation.start(
+                        fingerToAnimate.x,
+                        fingerToAnimate.y,
+                        fingerToAnimate.fingerRadius
+                    ) {
+                        invalidate()
+                    }
                 }
             }
 

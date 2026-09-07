@@ -38,6 +38,16 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/settings_gameplay_section_title">
+        <ListPreference
+            app:defaultValue="5s"
+            app:entries="@array/auto_reset_entries"
+            app:entryValues="@array/auto_reset_values"
+            app:key="@string/settings_auto_reset_key"
+            app:title="@string/settings_auto_reset_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="@string/settings_accessibility_section_title">
         <SwitchPreferenceCompat
             app:defaultValue="false"

@@ -66,6 +66,7 @@ class FingerSelectorView @JvmOverloads constructor(
     private var revealAnimationRadius: Float = 0f
     private var maxRevealRadius: Float = 0f
     private val cannonballBurstAnimation = CannonballBurstAnimation()
+    private val destroyedFingerIds = mutableSetOf<Int>()
 
     companion object {
         private const val COUNTDOWN_DURATION_SECONDS = 3
@@ -156,12 +157,23 @@ class FingerSelectorView @JvmOverloads constructor(
             // --- Reveal Animation or Final State ---
             if (selectedFingerIndex != -1 && fingers.indices.contains(selectedFingerIndex)) {
                 val selectedFinger = fingers[selectedFingerIndex]
-                revealPaint.color = selectedFinger.color // The color that expands
 
-                // Draw the expanding circle
-                canvas.drawCircle(
-                    selectedFinger.x, selectedFinger.y, revealAnimationRadius, revealPaint
-                )
+                // Draw the expanding circle if active
+                if (revealAnimationRadius > 0f) {
+                    revealPaint.color = selectedFinger.color // The color that expands
+                    canvas.drawCircle(
+                        selectedFinger.x, selectedFinger.y, revealAnimationRadius, revealPaint
+                    )
+                }
+
+                // Draw surviving losing ships (visible until struck by cannonball)
+                if (cannonballBurstAnimation.isRunning) {
+                    fingers.forEach { finger ->
+                        if (finger.id != selectedFinger.id && !destroyedFingerIds.contains(finger.id)) {
+                            finger.draw(canvas, context = context)
+                        }
+                    }
+                }
 
                 // NOW, ONLY DRAW THE SELECTED FINGER ON TOP OF THE REVEAL
                 paint.color = selectedFinger.color // The selected finger's actual color
@@ -227,9 +239,51 @@ class FingerSelectorView @JvmOverloads constructor(
                 max(dx1, dx2).toDouble(), max(dy1, dy2).toDouble()
             ).toFloat()
 
-            startRevealAnimation()
+            val currentTheme = ThemeManager.getCurrentTheme(context)
+            val losingFingers = fingers.filter { it.id != selectedFinger.id }
+
+            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS && losingFingers.isNotEmpty()) {
+                startPirateCannonSalvoAndReveal(selectedFinger, losingFingers)
+            } else {
+                startRevealAnimation()
+            }
         } else {
             resetSelectionProcess()
+        }
+    }
+
+    private fun startPirateCannonSalvoAndReveal(
+        selectedFinger: FingerPoint,
+        losingFingers: List<FingerPoint>
+    ) {
+        Log.d("SelectionTiming", "startPirateCannonSalvoAndReveal started at ${System.currentTimeMillis()} ms")
+        isRevealAnimationRunning = true
+        notifyActiveFingerCountChanged()
+        revealAnimationRadius = 0f
+        destroyedFingerIds.clear()
+
+        val targets = losingFingers.map {
+            CannonballBurstAnimation.Target(
+                id = it.id,
+                x = it.x,
+                y = it.y
+            )
+        }
+
+        cannonballBurstAnimation.startTargetedSalvo(
+            originX = selectedFinger.x,
+            originY = selectedFinger.y,
+            targets = targets,
+            fingerRadius = selectedFinger.fingerRadius,
+            onTargetHit = { targetId ->
+                destroyedFingerIds.add(targetId)
+                invalidate()
+            },
+            onAllComplete = {
+                startRevealAnimation()
+            }
+        ) {
+            invalidate()
         }
     }
 
@@ -242,7 +296,7 @@ class FingerSelectorView @JvmOverloads constructor(
             revealAnimationRadius = selectedFinger.fingerRadius
 
             val currentTheme = ThemeManager.getCurrentTheme(context)
-            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS) {
+            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS && fingers.size <= 1) {
                 cannonballBurstAnimation.start(selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius) {
                     invalidate()
                 }
@@ -288,6 +342,7 @@ class FingerSelectorView @JvmOverloads constructor(
         cannonballBurstAnimation.cancel()
         countDownTimer?.cancel()
 
+        destroyedFingerIds.clear()
         fingers.clear()
         selectedFingerIndex = -1
         selectionDone = false

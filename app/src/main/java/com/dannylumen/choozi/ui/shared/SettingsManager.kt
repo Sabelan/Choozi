@@ -107,5 +107,38 @@ object SettingsManager {
         val key = context.getString(R.string.settings_sticky_fingers_key)
         sharedPreferences.edit().putBoolean(key, enabled).apply()
     }
+
+    /**
+     * Reads the auto reset timer duration in seconds from SharedPreferences.
+     * @return Duration in seconds: 0 (disabled), 5, 10, or 15. Defaults to 5.
+     */
+    fun getAutoResetSeconds(context: Context): Int {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val key = context.getString(R.string.settings_auto_reset_key)
+        val value = sharedPreferences.getString(key, "5s") ?: "5s"
+        return parseAutoResetSeconds(value)
+    }
+
+    /**
+     * Parses the auto reset setting value string into an integer number of seconds.
+     * Supports "none", "0", "5s", "5", "10s", "10", "15s", "15".
+     */
+    fun parseAutoResetSeconds(value: String?): Int {
+        return when (value?.lowercase()?.trim()) {
+            "none", "0" -> 0
+            "10", "10s" -> 10
+            "15", "15s" -> 15
+            else -> 5
+        }
+    }
+
+    /**
+     * Stores the auto reset setting value into SharedPreferences.
+     */
+    fun setAutoResetSeconds(context: Context, value: String) {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val key = context.getString(R.string.settings_auto_reset_key)
+        sharedPreferences.edit().putString(key, value).apply()
+    }
 }
 
