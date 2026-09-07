@@ -64,7 +64,7 @@ object FingerColors {
 
 data class FingerPoint(
     // Common properties
-    val id: Int,
+    var id: Int,
     var x: Float,
     var y: Float,
     var color: Int,
@@ -89,6 +89,7 @@ data class FingerPoint(
 
     var teamId: Int = -1, // For team assignment
     var themeSprite: com.dannylumen.choozi.theme.ThemeSprite? = null,
+    var isSticky: Boolean = false,
 ) {
     companion object {
         private val basePaint = Paint().apply {
@@ -108,6 +109,18 @@ data class FingerPoint(
             textSize = 60f // Example, can be configured
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
+        }
+        private val stickyHaloPaint = Paint().apply {
+            style = Paint.Style.STROKE
+            isAntiAlias = true
+            strokeWidth = 6f
+            pathEffect = android.graphics.DashPathEffect(floatArrayOf(24f, 16f), 0f)
+        }
+        private val stickyHaloBackingPaint = Paint().apply {
+            style = Paint.Style.STROKE
+            isAntiAlias = true
+            strokeWidth = 10f
+            color = Color.argb(140, 0, 0, 0)
         }
     }
 
@@ -158,6 +171,13 @@ data class FingerPoint(
             textPaint.textSize = fingerRadius * 0.6f
             val textY = y - ((textPaint.descent() + textPaint.ascent()) / 2f)
             canvas.drawText(it.toString(), x, textY, textPaint)
+        }
+
+        // 5. Draw sticky indicator if this finger is persistent
+        if (isSticky) {
+            canvas.drawCircle(x, y, fingerRadius + 14f, stickyHaloBackingPaint)
+            stickyHaloPaint.color = Color.WHITE
+            canvas.drawCircle(x, y, fingerRadius + 14f, stickyHaloPaint)
         }
     }
 

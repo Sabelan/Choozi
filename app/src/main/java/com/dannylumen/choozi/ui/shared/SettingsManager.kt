@@ -88,5 +88,24 @@ object SettingsManager {
         val key = context.getString(R.string.settings_theme_pack_key)
         sharedPreferences.edit().putString(key, themePackId).apply()
     }
+
+    /**
+     * Reads the sticky fingers setting value from SharedPreferences.
+     * @return true if sticky fingers is enabled, false otherwise (default).
+     */
+    fun isStickyFingersEnabled(context: Context): Boolean {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val key = context.getString(R.string.settings_sticky_fingers_key)
+        return sharedPreferences.getBoolean(key, false)
+    }
+
+    /**
+     * Stores the sticky fingers setting value into SharedPreferences.
+     */
+    fun setStickyFingersEnabled(context: Context, enabled: Boolean) {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val key = context.getString(R.string.settings_sticky_fingers_key)
+        sharedPreferences.edit().putBoolean(key, enabled).apply()
+    }
 }
 

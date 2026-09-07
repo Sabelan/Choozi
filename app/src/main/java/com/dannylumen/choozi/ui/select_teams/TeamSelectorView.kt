@@ -75,82 +75,35 @@ class TeamSelectorView @JvmOverloads constructor(
         }
     }
 
+    private val touchHelper = com.dannylumen.choozi.ui.shared.StickyFingerTouchHelper(
+        context = context,
+        fingers = fingers,
+        createNewFinger = { id, x, y ->
+            val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
+            val sprite = currentTheme.getSpriteForFinger(fingers.size)
+            FingerPoint(id, x, y, FingerColors.NEUTRAL, themeSprite = sprite)
+        },
+        onFingerAdded = {
+            possiblyStartSelectionProcess()
+        },
+        onFingerRemoved = {
+            if (fingers.size < numberOfTeams && timerRunning) {
+                cancelSelectionTimer()
+            } else {
+                possiblyStartSelectionProcess()
+            }
+        },
+        onFingersChanged = {
+            notifyActiveFingerCountChanged()
+            invalidate()
+        }
+    )
+
     // App is for multi-finger use only - not sure how to support click events
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionDone || teamsAssignedAndAnimationsDone) return false
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                if (selectionDone) return true // Don't add fingers if selection process (countdown done) has started
-
-                val pointerIndex = event.actionIndex
-                val pointerId = event.getPointerId(pointerIndex)
-                val x = event.getX(pointerIndex)
-                val y = event.getY(pointerIndex)
-
-                // ALL FINGERS ARE NEUTRAL COLOR INITIALLY
-                val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
-                val sprite = currentTheme.getSpriteForFinger(fingers.size)
-                fingers.add(
-                    FingerPoint(
-                        pointerId, x, y, FingerColors.NEUTRAL, themeSprite = sprite
-                    )
-                )
-                notifyActiveFingerCountChanged()
-                invalidate()
-                possiblyStartSelectionProcess()
-                return true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (!selectionDone) {
-                    for (i in 0 until event.pointerCount) {
-                        val pointerId = event.getPointerId(i)
-                        val finger = fingers.find { it.id == pointerId }
-                        finger?.let {
-                            it.x = event.getX(i)
-                            it.y = event.getY(i)
-                        }
-                    }
-                    invalidate()
-                }
-                return true
-            }
-
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (selectionDone) return true // Don't remove if selection already happened
-
-                val pointerIndex = event.actionIndex
-                val pointerId = event.getPointerId(pointerIndex)
-                fingers.removeAll { it.id == pointerId }
-                notifyActiveFingerCountChanged()
-
-                if (fingers.isEmpty() && timerRunning) {
-                    cancelSelectionTimer()
-                } else if (fingers.size < numberOfTeams && timerRunning) {
-                    cancelSelectionTimer() // Cancel if not enough for teams
-                    Log.d("TeamSelectorView", "Not enough fingers for teams, timer cancelled.")
-                } else {
-                    possiblyStartSelectionProcess()
-                }
-                invalidate()
-                return true
-            }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                if (selectionDone) return true
-
-                fingers.clear()
-                if (timerRunning) {
-                    cancelSelectionTimer()
-                }
-                notifyActiveFingerCountChanged()
-                invalidate()
-                return true
-            }
-        }
-        return super.onTouchEvent(event)
+        return touchHelper.onTouchEvent(event)
     }
 
     private fun startSelectionTimer() {
@@ -329,6 +282,7 @@ class TeamSelectorView @JvmOverloads constructor(
         fingers.forEach { it.resetAnimationStates() /* also resets teamId if you implement it there */ }
         // default clearing of fingers but it is optional in case outer view doesn't want to
         if (clearFingers) {
+            touchHelper.reset()
             fingers.clear()
         }
 

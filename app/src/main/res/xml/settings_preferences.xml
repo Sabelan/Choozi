@@ -37,4 +37,12 @@
             app:title="@string/settings_theme_title" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/settings_accessibility_section_title">
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="@string/settings_sticky_fingers_key"
+            app:summary="@string/settings_sticky_fingers_summary"
+            app:title="@string/settings_sticky_fingers_title" />
+    </PreferenceCategory>
 </PreferenceScreen>

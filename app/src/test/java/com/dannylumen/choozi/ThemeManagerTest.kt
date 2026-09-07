@@ -18,15 +18,15 @@ class ThemeManagerTest {
 
         val defaultTheme = themes.first()
         assertEquals(ThemeManager.DEFAULT_THEME_ID, defaultTheme.id)
-        assertEquals("themes/default/build_up.wav", defaultTheme.buildUpAudioAsset)
-        assertEquals("themes/default/final_bell.wav", defaultTheme.finalAudioAsset)
+        assertEquals("themes/default/build_up.mp3", defaultTheme.buildUpAudioAsset)
+        assertEquals("themes/default/final_bell.mp3", defaultTheme.finalAudioAsset)
         assertTrue(defaultTheme.sprites.isEmpty())
 
         val pirateTheme = ThemeManager.getTheme("pirate")
         assertNotNull(pirateTheme)
         assertEquals("Pirate", pirateTheme.displayName)
         assertEquals("themes/pirate/saber_and_saltwater_short.mp3", pirateTheme.buildUpAudioAsset)
-        assertEquals("themes/pirate/final.mp3", pirateTheme.finalAudioAsset)
+        assertEquals("themes/pirate/final_long.mp3", pirateTheme.finalAudioAsset)
         assertEquals(com.dannylumen.choozi.theme.SelectionAnimationEffect.PIRATE_CANNONS, pirateTheme.selectionEffect)
         assertEquals(1, pirateTheme.sprites.size)
         val shipSprite = pirateTheme.sprites.first()

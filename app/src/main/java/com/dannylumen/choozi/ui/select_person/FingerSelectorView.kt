@@ -73,67 +73,38 @@ class FingerSelectorView @JvmOverloads constructor(
         private const val COUNTDOWN_INTERVAL_MS = 50L
     }
 
+    private val touchHelper = com.dannylumen.choozi.ui.shared.StickyFingerTouchHelper(
+        context = context,
+        fingers = fingers,
+        createNewFinger = { id, x, y ->
+            val color = FingerColors.pickRandomColor(fingers)
+            val currentTheme = ThemeManager.getCurrentTheme(context)
+            val sprite = currentTheme.getSpriteForFinger(fingers.size)
+            FingerPoint(id, x, y, color, themeSprite = sprite)
+        },
+        onFingerAdded = {
+            if (fingers.size >= 2) {
+                startSelectionTimer()
+            }
+        },
+        onFingerRemoved = {
+            if (fingers.size < 2 && timerRunning) {
+                cancelSelectionTimer()
+            } else if (fingers.size >= 2) {
+                startSelectionTimer()
+            }
+        },
+        onFingersChanged = {
+            notifyActiveFingerCountChanged()
+            invalidate()
+        }
+    )
+
     // App is for multi-finger use only - not sure how to support click events
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (selectionDone || isRevealAnimationRunning) return false
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                val pointerIndex = event.actionIndex
-                val pointerId = event.getPointerId(pointerIndex)
-                val x = event.getX(pointerIndex)
-                val y = event.getY(pointerIndex)
-                val color = FingerColors.pickRandomColor(fingers)
-                val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
-                val sprite = currentTheme.getSpriteForFinger(fingers.size)
-                fingers.add(FingerPoint(pointerId, x, y, color, themeSprite = sprite))
-                notifyActiveFingerCountChanged()
-                invalidate()
-                if (fingers.size >= 2) {
-                    startSelectionTimer()
-                }
-                return true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                for (i in 0 until event.pointerCount) {
-                    val pointerId = event.getPointerId(i)
-                    val finger = fingers.find { it.id == pointerId }
-                    finger?.let {
-                        it.x = event.getX(i)
-                        it.y = event.getY(i)
-                    }
-                }
-                invalidate()
-                return true
-            }
-
-            MotionEvent.ACTION_POINTER_UP -> {
-                val pointerIndex = event.actionIndex
-                val pointerId = event.getPointerId(pointerIndex)
-                fingers.removeAll { it.id == pointerId }
-                notifyActiveFingerCountChanged()
-                if (fingers.size < 2 && timerRunning) {
-                    cancelSelectionTimer()
-                } else if (fingers.size >= 2) {
-                    startSelectionTimer()
-                }
-                invalidate()
-                return true
-            }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                fingers.clear()
-                notifyActiveFingerCountChanged()
-                if (timerRunning) {
-                    cancelSelectionTimer()
-                }
-                invalidate()
-                return true
-            }
-        }
-        return super.onTouchEvent(event)
+        return touchHelper.onTouchEvent(event)
     }
 
     private fun startSelectionTimer() {
@@ -311,6 +282,7 @@ class FingerSelectorView @JvmOverloads constructor(
     }
 
     fun resetSelectionProcess() {
+        touchHelper.reset()
         audioManager.stopAny()
         revealAnimator?.cancel()
         cannonballBurstAnimation.cancel()

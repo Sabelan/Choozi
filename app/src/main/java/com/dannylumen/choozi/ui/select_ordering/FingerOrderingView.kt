@@ -82,92 +82,41 @@ class FingerOrderingView @JvmOverloads constructor(
             ANIMATION_DURATION_MS // We tie the line animation to the glow animation in time
     }
 
+    private val touchHelper = com.dannylumen.choozi.ui.shared.StickyFingerTouchHelper(
+        context = context,
+        fingers = activeFingers,
+        createNewFinger = { id, x, y ->
+            val currentTheme = ThemeManager.getCurrentTheme(context)
+            val sprite = currentTheme.getSpriteForFinger(activeFingers.size)
+            FingerPoint(
+                id, x, y, color = FingerColors.pickRandomColor(activeFingers), themeSprite = sprite
+            )
+        },
+        onFingerAdded = {
+            if (activeFingers.isNotEmpty()) {
+                selectionProcessStarted = true
+                startCountdownTimer()
+            }
+        },
+        onFingerRemoved = {
+            if (activeFingers.size < 2 && selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
+                internalResetProcess()
+            } else if (activeFingers.size >= 2) {
+                selectionProcessStarted = true
+                startCountdownTimer()
+            }
+        },
+        onFingersChanged = {
+            notifyActiveFingerCountChanged()
+            invalidate()
+        }
+    )
+
     // App is for multi-finger use only - not sure how to support click events
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (selectionCompleteAndAnimationsDone) return true
-
-        val action = event.actionMasked
-        val pointerIndex = event.actionIndex
-        val pointerId = event.getPointerId(pointerIndex)
-
-        when (action) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                if (selectionComplete) {
-                    return true
-                }
-                val x = event.getX(pointerIndex)
-                val y = event.getY(pointerIndex)
-
-                if (activeFingers.find { it.id == pointerId } == null) {
-                    val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
-                    val sprite = currentTheme.getSpriteForFinger(activeFingers.size)
-                    activeFingers.add(
-                        FingerPoint(
-                            pointerId, x, y, color = FingerColors.pickRandomColor(activeFingers), themeSprite = sprite
-                        )
-                    )
-                    notifyActiveFingerCountChanged()
-                    Log.d(TAG, "Added finger $pointerId. Count: ${activeFingers.size}")
-                    if (activeFingers.isNotEmpty()) {
-                        selectionProcessStarted = true
-                        startCountdownTimer()
-                    }
-                }
-                invalidate()
-                return true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (!isCountingDown && !selectionProcessStarted) return true
-                if (selectionComplete) return true
-
-                for (i in 0 until event.pointerCount) {
-                    val id = event.getPointerId(i)
-                    val finger = activeFingers.find { it.id == id }
-                    finger?.let {
-                        it.x = event.getX(i)
-                        it.y = event.getY(i)
-                    }
-                }
-                invalidate()
-                return true
-            }
-
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (selectionComplete) return true
-
-                activeFingers.removeAll { it.id == pointerId }
-                notifyActiveFingerCountChanged()
-                Log.d(TAG, "Removed finger $pointerId. Remaining: ${activeFingers.size}")
-
-                if (activeFingers.size < 2 && selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
-                    // Less than 2 fingers during countdown or before selection is final
-                    Log.d(TAG, "Fingers < 2 before selection complete. Resetting process.")
-                    internalResetProcess() // Resets the current selection process
-                } else if (activeFingers.size >= 2) {
-                    selectionProcessStarted = true
-                    startCountdownTimer()
-                }
-                invalidate()
-                return true
-            }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                if (selectionComplete) return true
-
-                activeFingers.clear()
-                Log.d(TAG, "All fingers lifted or cancelled.")
-                if (selectionProcessStarted && !selectionCompleteAndAnimationsDone) {
-                    internalResetProcess()
-                } else {
-                    notifyActiveFingerCountChanged()
-                }
-                invalidate()
-                return true
-            }
-        }
-        return super.onTouchEvent(event)
+        if (selectionCompleteAndAnimationsDone || selectionComplete) return true
+        return touchHelper.onTouchEvent(event)
     }
 
     private fun startCountdownTimer() {
@@ -447,6 +396,7 @@ class FingerOrderingView @JvmOverloads constructor(
      */
     fun publicResetView() {
         Log.d(TAG, "publicResetView called.")
+        touchHelper.reset()
         // Clear all fingers as this is a full external reset
         activeFingers.clear()
         assignedNumbersOrder.clear()

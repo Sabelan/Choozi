@@ -39,4 +39,10 @@
         <item>dark</item>
     </string-array>
     <string name="select_theme">Select Theme</string>
+
+    <!-- Accessibility Settings -->
+    <string name="settings_accessibility_section_title">Accessibility</string>
+    <string name="settings_sticky_fingers_key">sticky_fingers_settings_key</string>
+    <string name="settings_sticky_fingers_title">Sticky Fingers</string>
+    <string name="settings_sticky_fingers_summary">Double tap to place a finger that stays on screen until tapped again</string>
 </resources>
