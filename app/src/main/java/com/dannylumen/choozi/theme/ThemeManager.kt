@@ -30,6 +30,9 @@ object ThemeManager {
 
         // 2. Pirate Theme Pack
         registerPirateTheme()
+
+        // 3. Cyberpunk Theme Pack
+        registerCyberpunkTheme()
     }
 
     /**
@@ -122,6 +125,36 @@ object ThemeManager {
                 restartAudioOnNewFinger = false,
                 stopBuildUpOnFinalNote = true,
                 selectionEffect = SelectionAnimationEffect.PIRATE_CANNONS
+            )
+        )
+    }
+
+    private fun registerCyberpunkTheme() {
+        registerTheme(
+            ThemePack(
+                id = "cyberpunk",
+                displayName = "Cyberpunk",
+                buildUpAudioAsset = "themes/cyberpunk/cyberpunk.mp3",
+                finalAudioAsset = "themes/cyberpunk/final.mp3",
+                buildUpVolume = 0.4f,
+                finalAudioVolume = 1.0f,
+                background = ThemeBackground(
+                    effect = BackgroundEffect.NEON_LINES,
+                    backgroundColor = 0xFF0B0813.toInt()
+                ),
+                sprites = listOf(
+                    ThemeSprite(
+                        assetPath = "themes/cyberpunk/mech.png",
+                        scale = 0.85f,
+                        offsetXRatio = -0.05f,
+                        sway = false
+                    )
+                ),
+                defaultSpriteScale = 1.0f,
+                loopBuildUpAudio = true,
+                restartAudioOnNewFinger = false,
+                stopBuildUpOnFinalNote = true,
+                selectionEffect = SelectionAnimationEffect.CYBER_LASERS
             )
         )
     }

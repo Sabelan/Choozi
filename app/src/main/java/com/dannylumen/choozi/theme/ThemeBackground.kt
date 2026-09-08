@@ -13,8 +13,10 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 
+import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Path
+import android.graphics.PathMeasure
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -43,7 +45,8 @@ enum class BackgroundScaleMode {
 
 enum class BackgroundEffect {
     NONE,
-    OCEAN_WAVES
+    OCEAN_WAVES,
+    NEON_LINES
 }
 
 data class ThemeBackground(
@@ -149,6 +152,188 @@ data class ThemeBackground(
 
         private var lastGradientW = -1
         private var lastGradientH = -1
+
+        private data class NeonLineConfig(
+            val color: Int,
+            val points: List<Pair<Float, Float>>,
+            val pulseSpeed: Float,
+            val pulsePhase: Float,
+            val packetSpeed: Float,
+            val packetOffset: Float
+        )
+
+        private val NEON_LINES_CONFIG = listOf(
+            // 0. Acid Lime Green - Full horizontal span across upper section
+            NeonLineConfig(
+                color = 0xFF39FF14.toInt(),
+                points = listOf(-0.02f to 0.08f, 0.24f to 0.08f, 0.38f to 0.14f, 0.70f to 0.14f, 0.82f to 0.08f, 1.02f to 0.08f),
+                pulseSpeed = 3.2f,
+                pulsePhase = 3.4f,
+                packetSpeed = 0.32f,
+                packetOffset = 0.2f
+            ),
+            // 1. Electric Cyan - Full horizontal span across upper-mid highway
+            NeonLineConfig(
+                color = 0xFF00F0FF.toInt(),
+                points = listOf(-0.02f to 0.22f, 0.30f to 0.22f, 0.44f to 0.28f, 0.76f to 0.28f, 0.88f to 0.34f, 1.02f to 0.34f),
+                pulseSpeed = 2.4f,
+                pulsePhase = 0.0f,
+                packetSpeed = 0.28f,
+                packetOffset = 0.1f
+            ),
+            // 2. Cyber Gold - Full horizontal span across mid-upper section
+            NeonLineConfig(
+                color = 0xFFFFD700.toInt(),
+                points = listOf(-0.02f to 0.36f, 0.18f to 0.36f, 0.32f to 0.44f, 0.64f to 0.44f, 0.76f to 0.40f, 1.02f to 0.40f),
+                pulseSpeed = 2.7f,
+                pulsePhase = 1.1f,
+                packetSpeed = 0.35f,
+                packetOffset = 0.6f
+            ),
+            // 3. Laser Blue - Full horizontal span across center section
+            NeonLineConfig(
+                color = 0xFF00BFFF.toInt(),
+                points = listOf(-0.02f to 0.48f, 0.26f to 0.48f, 0.38f to 0.54f, 0.66f to 0.54f, 0.78f to 0.48f, 1.02f to 0.48f),
+                pulseSpeed = 3.5f,
+                pulsePhase = 5.2f,
+                packetSpeed = 0.26f,
+                packetOffset = 0.85f
+            ),
+            // 4. Hot Magenta - Full horizontal span across center-lower section
+            NeonLineConfig(
+                color = 0xFFFF007F.toInt(),
+                points = listOf(-0.02f to 0.62f, 0.20f to 0.62f, 0.34f to 0.68f, 0.68f to 0.68f, 0.82f to 0.74f, 1.02f to 0.74f),
+                pulseSpeed = 2.8f,
+                pulsePhase = 1.8f,
+                packetSpeed = 0.24f,
+                packetOffset = 0.55f
+            ),
+            // 5. Electric Violet - Full vertical trunk stretching from top to bottom
+            NeonLineConfig(
+                color = 0xFFB026FF.toInt(),
+                points = listOf(0.82f to -0.02f, 0.82f to 0.20f, 0.68f to 0.32f, 0.68f to 0.64f, 0.52f to 0.76f, 0.52f to 1.02f),
+                pulseSpeed = 2.1f,
+                pulsePhase = 4.7f,
+                packetSpeed = 0.22f,
+                packetOffset = 0.75f
+            ),
+            // 6. Neon Amber - Full horizontal span across lower section
+            NeonLineConfig(
+                color = 0xFFFF7700.toInt(),
+                points = listOf(-0.02f to 0.78f, 0.28f to 0.78f, 0.42f to 0.84f, 0.72f to 0.84f, 0.86f to 0.80f, 1.02f to 0.80f),
+                pulseSpeed = 2.5f,
+                pulsePhase = 2.5f,
+                packetSpeed = 0.30f,
+                packetOffset = 0.35f
+            ),
+            // 7. Neon Rose - Full horizontal span across bottom section
+            NeonLineConfig(
+                color = 0xFFFF1493.toInt(),
+                points = listOf(-0.02f to 0.92f, 0.22f to 0.92f, 0.36f to 0.96f, 0.68f to 0.96f, 0.80f to 0.92f, 1.02f to 0.92f),
+                pulseSpeed = 3.0f,
+                pulsePhase = 3.9f,
+                packetSpeed = 0.27f,
+                packetOffset = 0.4f
+            ),
+            // 8. Teal Cyan - Full vertical trunk stretching from top to bottom
+            NeonLineConfig(
+                color = 0xFF00E5FF.toInt(),
+                points = listOf(0.18f to -0.02f, 0.18f to 0.35f, 0.30f to 0.45f, 0.30f to 0.70f, 0.40f to 0.80f, 0.40f to 1.02f),
+                pulseSpeed = 2.9f,
+                pulsePhase = 2.0f,
+                packetSpeed = 0.25f,
+                packetOffset = 0.15f
+            )
+        )
+
+        private var lastNeonW = -1
+        private var lastNeonH = -1
+        private val cachedNeonPaths = Array(NEON_LINES_CONFIG.size) { Path() }
+        private val cachedPathMeasures = Array(NEON_LINES_CONFIG.size) { PathMeasure() }
+        private val cachedPathLengths = FloatArray(NEON_LINES_CONFIG.size)
+        private val tempPos = FloatArray(2)
+
+        private val cyberBasePaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
+        private val cyberGridPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeWidth = 1.0f
+                color = 0x1400F0FF.toInt()
+            }
+        }
+        private val neonOuterGlowPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+            }
+        }
+        private val neonMidGlowPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+            }
+        }
+        private val neonCorePaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+                strokeWidth = 2.8f
+            }
+        }
+        private val neonWhiteCorePaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+                strokeWidth = 1.0f
+                color = Color.WHITE
+            }
+        }
+        private val neonNodeOuterPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
+        private val neonNodeMidPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
+        private val neonNodeCorePaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+                color = Color.WHITE
+            }
+        }
+        private val neonTerminalRingPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.STROKE
+                strokeWidth = 2.0f
+            }
+        }
+        private val neonTerminalDotPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
     }
 
     fun draw(context: Context, canvas: Canvas, viewWidth: Int, viewHeight: Int) {
@@ -157,6 +342,12 @@ data class ThemeBackground(
         // 1. Animated wave effect
         if (effect == BackgroundEffect.OCEAN_WAVES) {
             drawOceanWaves(canvas, viewWidth, viewHeight)
+            return
+        }
+
+        // 2. Animated neon lines effect
+        if (effect == BackgroundEffect.NEON_LINES) {
+            drawNeonLines(canvas, viewWidth, viewHeight)
             return
         }
 
@@ -435,5 +626,140 @@ data class ThemeBackground(
         if (crestPaint != null) {
             canvas.drawPath(crestPath, crestPaint)
         }
+    }
+
+    private fun drawNeonLines(canvas: Canvas, viewWidth: Int, viewHeight: Int) {
+        val w = viewWidth.toFloat()
+        val h = viewHeight.toFloat()
+
+        // 1. Rebuild paths if dimensions changed
+        if (lastNeonW != viewWidth || lastNeonH != viewHeight) {
+            lastNeonW = viewWidth
+            lastNeonH = viewHeight
+
+            cyberBasePaint.shader = LinearGradient(
+                0f, 0f, 0f, h,
+                intArrayOf(
+                    0xFF07050F.toInt(),
+                    0xFF0D0820.toInt(),
+                    0xFF050712.toInt()
+                ),
+                floatArrayOf(0f, 0.45f, 1f),
+                Shader.TileMode.CLAMP
+            )
+
+            for (i in NEON_LINES_CONFIG.indices) {
+                val config = NEON_LINES_CONFIG[i]
+                val path = cachedNeonPaths[i]
+                path.reset()
+                val pts = config.points
+                if (pts.isNotEmpty()) {
+                    path.moveTo(pts[0].first * w, pts[0].second * h)
+                    for (j in 1 until pts.size) {
+                        path.lineTo(pts[j].first * w, pts[j].second * h)
+                    }
+                }
+                cachedPathMeasures[i].setPath(path, false)
+                cachedPathLengths[i] = cachedPathMeasures[i].length
+            }
+        }
+
+        // 2. Draw base cyberpunk dark gradient
+        canvas.drawRect(0f, 0f, w, h, cyberBasePaint)
+
+        val timeSec = (System.currentTimeMillis() % 1_000_000L) / 1000f
+
+        // 3. Draw ambient cyber grid
+        val gridStep = (w / 14f).coerceIn(60f, 95f)
+        val gridPulse = 0.75f + 0.25f * sin(timeSec * 1.6f)
+        cyberGridPaint.alpha = (22 * gridPulse).toInt().coerceIn(6, 45)
+
+        var gx = gridStep
+        while (gx < w) {
+            canvas.drawLine(gx, 0f, gx, h, cyberGridPaint)
+            gx += gridStep
+        }
+        var gy = gridStep
+        while (gy < h) {
+            canvas.drawLine(0f, gy, w, gy, cyberGridPaint)
+            gy += gridStep
+        }
+
+        // 4. Draw each glowing neon line and its traveling light packet
+        for (i in NEON_LINES_CONFIG.indices) {
+            val config = NEON_LINES_CONFIG[i]
+            val path = cachedNeonPaths[i]
+            val pathLen = cachedPathLengths[i]
+            val pts = config.points
+
+            // Pulsing rhythm
+            val pulse = 0.65f + 0.35f * sin(timeSec * config.pulseSpeed + config.pulsePhase)
+
+            // Layer 1: Outer soft neon aura
+            neonOuterGlowPaint.color = config.color
+            neonOuterGlowPaint.strokeWidth = 14f + 6f * pulse
+            neonOuterGlowPaint.alpha = (45 * pulse).toInt().coerceIn(10, 100)
+            canvas.drawPath(path, neonOuterGlowPaint)
+
+            // Layer 2: Mid vibrant neon halo
+            neonMidGlowPaint.color = config.color
+            neonMidGlowPaint.strokeWidth = 6f + 2.5f * pulse
+            neonMidGlowPaint.alpha = (115 * pulse).toInt().coerceIn(30, 200)
+            canvas.drawPath(path, neonMidGlowPaint)
+
+            // Layer 3: Intense inner colored core
+            neonCorePaint.color = config.color
+            neonCorePaint.alpha = (235 + 20 * pulse).toInt().coerceIn(180, 255)
+            canvas.drawPath(path, neonCorePaint)
+
+            // Layer 4: Ultra bright white-hot center line
+            neonWhiteCorePaint.alpha = (180 * pulse).toInt().coerceIn(60, 255)
+            canvas.drawPath(path, neonWhiteCorePaint)
+
+            // Terminal pads (vias) on ends that are inside the screen bounds
+            if (pts.isNotEmpty()) {
+                val first = pts.first()
+                if (first.first in 0.05f..0.95f && first.second in 0.05f..0.95f) {
+                    val tx = first.first * w
+                    val ty = first.second * h
+                    drawTerminalPad(canvas, tx, ty, config.color, pulse)
+                }
+                val last = pts.last()
+                if (last.first in 0.05f..0.95f && last.second in 0.05f..0.95f) {
+                    val tx = last.first * w
+                    val ty = last.second * h
+                    drawTerminalPad(canvas, tx, ty, config.color, pulse)
+                }
+            }
+
+            // Layer 5: Traveling glowing light packet
+            if (pathLen > 0f) {
+                val travel = ((timeSec * config.packetSpeed + config.packetOffset) % 1.0f) * pathLen
+                cachedPathMeasures[i].getPosTan(travel, tempPos, null)
+                val px = tempPos[0]
+                val py = tempPos[1]
+
+                neonNodeOuterPaint.color = config.color
+                neonNodeOuterPaint.alpha = (80 * pulse).toInt().coerceIn(20, 150)
+                canvas.drawCircle(px, py, 15f + 4f * pulse, neonNodeOuterPaint)
+
+                neonNodeMidPaint.color = config.color
+                neonNodeMidPaint.alpha = (175 * pulse).toInt().coerceIn(50, 255)
+                canvas.drawCircle(px, py, 6.5f + 2f * pulse, neonNodeMidPaint)
+
+                neonNodeCorePaint.alpha = (230 + 25 * pulse).toInt().coerceIn(200, 255)
+                canvas.drawCircle(px, py, 2.8f, neonNodeCorePaint)
+            }
+        }
+    }
+
+    private fun drawTerminalPad(canvas: Canvas, x: Float, y: Float, color: Int, pulse: Float) {
+        neonTerminalRingPaint.color = color
+        neonTerminalRingPaint.alpha = (160 * pulse).toInt().coerceIn(50, 255)
+        canvas.drawCircle(x, y, 6.5f, neonTerminalRingPaint)
+
+        neonTerminalDotPaint.color = color
+        neonTerminalDotPaint.alpha = (230 + 25 * pulse).toInt().coerceIn(180, 255)
+        canvas.drawCircle(x, y, 3.0f, neonTerminalDotPaint)
     }
 }

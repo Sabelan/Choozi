@@ -5,7 +5,8 @@ import com.dannylumen.choozi.R
 
 enum class SelectionAnimationEffect {
     NONE,
-    PIRATE_CANNONS
+    PIRATE_CANNONS,
+    CYBER_LASERS
 }
 
 /**

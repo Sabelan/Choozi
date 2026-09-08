@@ -59,6 +59,7 @@ class FingerOrderingView @JvmOverloads constructor(
     // Audio Manager
     private val audioManager: AudioManager = AudioManager(context)
     private val cannonballBurstAnimation = CannonballBurstAnimation()
+    private val laserBurstAnimation = com.dannylumen.choozi.theme.LaserBurstAnimation()
 
     // For drawing lines
     private val linePath = Path()
@@ -237,6 +238,31 @@ class FingerOrderingView @JvmOverloads constructor(
                         invalidate()
                     }
                 }
+            } else if (currentTheme.selectionEffect == SelectionAnimationEffect.CYBER_LASERS) {
+                if (currentAnimatingFingerIndex < assignedNumbersOrder.size - 1) {
+                    val nextFinger = assignedNumbersOrder[currentAnimatingFingerIndex + 1]
+                    laserBurstAnimation.startTargeted(
+                        originX = fingerToAnimate.x,
+                        originY = fingerToAnimate.y,
+                        targetX = nextFinger.x,
+                        targetY = nextFinger.y,
+                        fingerRadius = fingerToAnimate.fingerRadius,
+                        color = fingerToAnimate.color,
+                        durationMs = ANIMATION_DURATION_MS
+                    ) {
+                        invalidate()
+                    }
+                } else {
+                    // Shoot lasers in all directions for the last mech in the chain
+                    laserBurstAnimation.start(
+                        fingerToAnimate.x,
+                        fingerToAnimate.y,
+                        fingerToAnimate.fingerRadius,
+                        color = fingerToAnimate.color
+                    ) {
+                        invalidate()
+                    }
+                }
             }
 
             // Start the line segment building to the finger
@@ -368,6 +394,12 @@ class FingerOrderingView @JvmOverloads constructor(
             postInvalidateOnAnimation()
         }
 
+        // Draw laser burst animation if active
+        if (laserBurstAnimation.isRunning) {
+            laserBurstAnimation.draw(canvas)
+            postInvalidateOnAnimation()
+        }
+
         // Draw countdown timer text
         if (isCountingDown && !selectionCompleteAndAnimationsDone && activeFingers.isNotEmpty()) {
             val countdownText = countdownSecondsRemaining.toString()
@@ -382,6 +414,7 @@ class FingerOrderingView @JvmOverloads constructor(
         Log.d(TAG, "internalResetProcess called.")
         countdownTimer?.cancel()
         cannonballBurstAnimation.cancel()
+        laserBurstAnimation.cancel()
         audioManager.stopAny()
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
@@ -443,6 +476,7 @@ class FingerOrderingView @JvmOverloads constructor(
         com.dannylumen.choozi.theme.ThemeManager.removeThemeChangeListener(themeChangeListener)
         countdownTimer?.cancel()
         cannonballBurstAnimation.cancel()
+        laserBurstAnimation.cancel()
         audioManager.release()
     }
 }

@@ -15,6 +15,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.theme.CannonballBurstAnimation
+import com.dannylumen.choozi.theme.LaserBurstAnimation
 import com.dannylumen.choozi.theme.SelectionAnimationEffect
 import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
@@ -66,6 +67,7 @@ class FingerSelectorView @JvmOverloads constructor(
     private var revealAnimationRadius: Float = 0f
     private var maxRevealRadius: Float = 0f
     private val cannonballBurstAnimation = CannonballBurstAnimation()
+    private val laserBurstAnimation = LaserBurstAnimation()
     private val destroyedFingerIds = mutableSetOf<Int>()
 
     companion object {
@@ -166,8 +168,8 @@ class FingerSelectorView @JvmOverloads constructor(
                     )
                 }
 
-                // Draw surviving losing ships (visible until struck by cannonball)
-                if (cannonballBurstAnimation.isRunning) {
+                // Draw surviving losing fingers (visible until struck by cannonball or laser)
+                if (cannonballBurstAnimation.isRunning || laserBurstAnimation.isRunning) {
                     fingers.forEach { finger ->
                         if (finger.id != selectedFinger.id && !destroyedFingerIds.contains(finger.id)) {
                             finger.draw(canvas, context = context)
@@ -191,6 +193,12 @@ class FingerSelectorView @JvmOverloads constructor(
                 // Draw cannonball burst animation if active
                 if (cannonballBurstAnimation.isRunning) {
                     cannonballBurstAnimation.draw(context, canvas)
+                    postInvalidateOnAnimation()
+                }
+
+                // Draw laser burst animation if active
+                if (laserBurstAnimation.isRunning) {
+                    laserBurstAnimation.draw(canvas)
                     postInvalidateOnAnimation()
                 }
             }
@@ -244,6 +252,8 @@ class FingerSelectorView @JvmOverloads constructor(
 
             if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS && losingFingers.isNotEmpty()) {
                 startPirateCannonSalvoAndReveal(selectedFinger, losingFingers)
+            } else if (currentTheme.selectionEffect == SelectionAnimationEffect.CYBER_LASERS && losingFingers.isNotEmpty()) {
+                startLaserSalvoAndReveal(selectedFinger, losingFingers)
             } else {
                 startRevealAnimation()
             }
@@ -287,6 +297,42 @@ class FingerSelectorView @JvmOverloads constructor(
         }
     }
 
+    private fun startLaserSalvoAndReveal(
+        selectedFinger: FingerPoint,
+        losingFingers: List<FingerPoint>
+    ) {
+        Log.d("SelectionTiming", "startLaserSalvoAndReveal started at ${System.currentTimeMillis()} ms")
+        isRevealAnimationRunning = true
+        notifyActiveFingerCountChanged()
+        revealAnimationRadius = 0f
+        destroyedFingerIds.clear()
+
+        val targets = losingFingers.map {
+            LaserBurstAnimation.Target(
+                id = it.id,
+                x = it.x,
+                y = it.y
+            )
+        }
+
+        laserBurstAnimation.startTargetedSalvo(
+            originX = selectedFinger.x,
+            originY = selectedFinger.y,
+            targets = targets,
+            fingerRadius = selectedFinger.fingerRadius,
+            color = selectedFinger.color,
+            onTargetHit = { targetId ->
+                destroyedFingerIds.add(targetId)
+                invalidate()
+            },
+            onAllComplete = {
+                startRevealAnimation()
+            }
+        ) {
+            invalidate()
+        }
+    }
+
     private fun startRevealAnimation() {
         Log.d("SelectionTiming", "startRevealAnimation started at ${System.currentTimeMillis()} ms, selectedFingerIndex=$selectedFingerIndex")
         isRevealAnimationRunning = true
@@ -296,9 +342,15 @@ class FingerSelectorView @JvmOverloads constructor(
             revealAnimationRadius = selectedFinger.fingerRadius
 
             val currentTheme = ThemeManager.getCurrentTheme(context)
-            if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS && fingers.size <= 1) {
-                cannonballBurstAnimation.start(selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius) {
-                    invalidate()
+            if (fingers.size <= 1) {
+                if (currentTheme.selectionEffect == SelectionAnimationEffect.PIRATE_CANNONS) {
+                    cannonballBurstAnimation.start(selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius) {
+                        invalidate()
+                    }
+                } else if (currentTheme.selectionEffect == SelectionAnimationEffect.CYBER_LASERS) {
+                    laserBurstAnimation.start(selectedFinger.x, selectedFinger.y, selectedFinger.fingerRadius, selectedFinger.color) {
+                        invalidate()
+                    }
                 }
             }
         }
@@ -340,6 +392,7 @@ class FingerSelectorView @JvmOverloads constructor(
         audioManager.stopAny()
         revealAnimator?.cancel()
         cannonballBurstAnimation.cancel()
+        laserBurstAnimation.cancel()
         countDownTimer?.cancel()
 
         destroyedFingerIds.clear()
@@ -375,5 +428,6 @@ class FingerSelectorView @JvmOverloads constructor(
         countDownTimer?.cancel()
         revealAnimator?.cancel()
         cannonballBurstAnimation.cancel()
+        laserBurstAnimation.cancel()
     }
 }

@@ -11,6 +11,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.theme.CannonballBurstAnimation
+import com.dannylumen.choozi.theme.LaserBurstAnimation
 import com.dannylumen.choozi.theme.SelectionAnimationEffect
 import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
@@ -25,6 +26,7 @@ class TeamSelectorView @JvmOverloads constructor(
 
     private val fingers = mutableListOf<FingerPoint>()
     private val cannonballBurstAnimation = CannonballBurstAnimation()
+    private val laserBurstAnimation = LaserBurstAnimation()
     private var countdownSeconds: Int = 0
     private var countDownProgress: Float? = null // For initial glow before selection
     private var countDownTimer: CountDownTimer? = null
@@ -193,6 +195,12 @@ class TeamSelectorView @JvmOverloads constructor(
                         invalidate()
                     }
                 }
+            } else if (currentTheme.selectionEffect == SelectionAnimationEffect.CYBER_LASERS) {
+                fingers.filter { it.teamId == teamToAnimate }.forEach { finger ->
+                    laserBurstAnimation.start(finger.x, finger.y, finger.fingerRadius, finger.color) {
+                        invalidate()
+                    }
+                }
             }
 
             fingers.forEach { finger ->
@@ -263,6 +271,12 @@ class TeamSelectorView @JvmOverloads constructor(
             postInvalidateOnAnimation()
         }
 
+        // Draw laser burst animation if active
+        if (laserBurstAnimation.isRunning) {
+            laserBurstAnimation.draw(canvas)
+            postInvalidateOnAnimation()
+        }
+
         // Draw countdown timer text
         if (timerRunning && !selectionDone && countdownSeconds > 0) {
             val text = countdownSeconds.toString()
@@ -276,6 +290,7 @@ class TeamSelectorView @JvmOverloads constructor(
     fun resetSelectionProcess(clearFingers: Boolean = true) {
         audioManager.stopAny()
         cannonballBurstAnimation.cancel()
+        laserBurstAnimation.cancel()
         teamAnimationAnimator?.cancel()
         countDownTimer?.cancel()
 
@@ -315,6 +330,7 @@ class TeamSelectorView @JvmOverloads constructor(
         countDownTimer?.cancel()
         teamAnimationAnimator?.cancel()
         cannonballBurstAnimation.cancel()
+        laserBurstAnimation.cancel()
         audioManager.release()
     }
 }
