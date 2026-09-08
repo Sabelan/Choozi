@@ -105,4 +105,57 @@ class StickyFingerTest {
         val distFar = kotlin.math.hypot(tapFarX - tap1X, tapFarY - tap1Y)
         assertFalse(distFar <= doubleTapSlop)
     }
+
+    @Test
+    fun testPreferredColorSelectedWhenAvailable() {
+        val existingFingers = listOf(
+            FingerPoint(id = 0, x = 50f, y = 50f, color = Color.RED),
+            FingerPoint(id = 1, x = 100f, y = 100f, color = Color.GREEN)
+        )
+        val preferred = Color.BLUE
+        val picked = com.dannylumen.choozi.ui.shared.FingerColors.pickRandomColor(existingFingers, preferredColor = preferred)
+        assertEquals("Should select the preferred color when it is available", preferred, picked)
+    }
+
+    @Test
+    fun testRandomColorSelectedWhenPreferredColorTaken() {
+        val existingFingers = listOf(
+            FingerPoint(id = 0, x = 50f, y = 50f, color = Color.RED),
+            FingerPoint(id = 1, x = 100f, y = 100f, color = Color.BLUE)
+        )
+        val preferred = Color.BLUE // already taken by finger 1
+        val picked = com.dannylumen.choozi.ui.shared.FingerColors.pickRandomColor(existingFingers, preferredColor = preferred)
+        assertNotEquals("Should NOT select the preferred color when it is already taken", preferred, picked)
+        assertNotEquals("Should NOT select any already used color", Color.RED, picked)
+    }
+
+    @Test
+    fun testLastRemovedColorRecorded() {
+        com.dannylumen.choozi.ui.shared.FingerColors.recordRemovedColor(Color.MAGENTA)
+        assertEquals(Color.MAGENTA, com.dannylumen.choozi.ui.shared.FingerColors.lastRemovedColor)
+    }
+
+    @Test
+    fun testDoubleTapUsesLastRemovedColorToPreventFlashing() {
+        val fingers = mutableListOf<FingerPoint>()
+        // Tap 1 down: finger gets Color.CYAN
+        val finger1 = FingerPoint(id = 0, x = 100f, y = 100f, color = Color.CYAN)
+        fingers.add(finger1)
+
+        // Tap 1 up: finger is removed and color recorded
+        val removedColor = finger1.color
+        fingers.remove(finger1)
+        com.dannylumen.choozi.ui.shared.FingerColors.recordRemovedColor(removedColor)
+
+        // Tap 2 down (double tap detected): prefer removedColor
+        val stickyColor = com.dannylumen.choozi.ui.shared.FingerColors.pickRandomColor(
+            fingers,
+            preferredColor = com.dannylumen.choozi.ui.shared.FingerColors.lastRemovedColor
+        )
+        val stickyFinger = FingerPoint(id = -100, x = 100f, y = 100f, color = stickyColor, isSticky = true)
+        fingers.add(stickyFinger)
+
+        // Sticky finger should have the exact same color as the first tap
+        assertEquals("Sticky finger on double-tap should reuse the last removed color", Color.CYAN, stickyFinger.color)
+    }
 }

@@ -31,6 +31,12 @@ object FingerColors {
         Color.rgb(128, 0, 128), // Purple
     )
 
+    var lastRemovedColor: Int? = null
+
+    fun recordRemovedColor(color: Int) {
+        lastRemovedColor = color
+    }
+
     private var colorIndex = 0
 
     private fun generateRandomColorFallback(): Int {
@@ -42,8 +48,12 @@ object FingerColors {
 
     fun pickRandomColor(
         existingFingers: List<FingerPoint>,
+        preferredColor: Int? = null
     ): Int {
         val usedColors = existingFingers.map { it.color }
+        if (preferredColor != null && !usedColors.contains(preferredColor)) {
+            return preferredColor
+        }
         val availableUniqueColors = COLORS.filterNot { usedColors.contains(it) }
         return if (availableUniqueColors.isNotEmpty()) {
             availableUniqueColors.random()

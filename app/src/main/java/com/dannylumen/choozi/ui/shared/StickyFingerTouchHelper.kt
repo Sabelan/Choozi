@@ -19,19 +19,39 @@ import kotlin.math.hypot
 class StickyFingerTouchHelper(
     private val context: Context,
     private val fingers: MutableList<FingerPoint>,
-    private val createNewFinger: (id: Int, x: Float, y: Float) -> FingerPoint,
+    private val createNewFinger: (id: Int, x: Float, y: Float, preferredColor: Int?) -> FingerPoint,
     private val onFingerAdded: (FingerPoint) -> Unit = {},
     private val onFingerRemoved: (FingerPoint) -> Unit = {},
     private val onFingersChanged: () -> Unit = {}
 ) {
+
+    // Convenience constructor for callers using (id, x, y)
+    constructor(
+        context: Context,
+        fingers: MutableList<FingerPoint>,
+        createNewFinger: (id: Int, x: Float, y: Float) -> FingerPoint,
+        onFingerAdded: (FingerPoint) -> Unit = {},
+        onFingerRemoved: (FingerPoint) -> Unit = {},
+        onFingersChanged: () -> Unit = {}
+    ) : this(
+        context = context,
+        fingers = fingers,
+        createNewFinger = { id, x, y, _ -> createNewFinger(id, x, y) },
+        onFingerAdded = onFingerAdded,
+        onFingerRemoved = onFingerRemoved,
+        onFingersChanged = onFingersChanged
+    )
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat().coerceAtLeast(30f)
     private val doubleTapSlop = 150f
     private val doubleTapTimeoutMs = 400L
     private val tapTimeoutMs = 350L
 
-    private data class TapRecord(val x: Float, val y: Float, val timeMs: Long)
+    private data class TapRecord(val x: Float, val y: Float, val timeMs: Long, val color: Int? = null)
     private var lastTap: TapRecord? = null
+
+    var lastRemovedColor: Int? = null
+        internal set
 
     private data class DownPointerInfo(
         val startX: Float,
@@ -51,6 +71,8 @@ class StickyFingerTouchHelper(
     fun reset() {
         activePointers.clear()
         lastTap = null
+        lastRemovedColor = null
+        FingerColors.lastRemovedColor = null
     }
 
     /**
@@ -92,7 +114,13 @@ class StickyFingerTouchHelper(
                     if (isDoubleTap) {
                         lastTap = null
                         val stickyId = nextStickyId--
-                        val stickyFinger = createNewFinger(stickyId, x, y).apply { isSticky = true }
+                        val preferredColor = prevTap.color ?: lastRemovedColor ?: FingerColors.lastRemovedColor
+                        val stickyFinger = createNewFinger(stickyId, x, y, preferredColor).apply {
+                            isSticky = true
+                            if (preferredColor != null && fingers.none { it.color == preferredColor } && color != FingerColors.NEUTRAL) {
+                                color = preferredColor
+                            }
+                        }
                         fingers.add(stickyFinger)
                         activePointers[pointerId] = DownPointerInfo(
                             startX = x,
@@ -109,7 +137,7 @@ class StickyFingerTouchHelper(
 
                 // 3. Normal finger down
                 if (fingers.none { it.id == pointerId && !it.isSticky }) {
-                    val normalFinger = createNewFinger(pointerId, x, y).apply { isSticky = false }
+                    val normalFinger = createNewFinger(pointerId, x, y, null).apply { isSticky = false }
                     fingers.add(normalFinger)
                     activePointers[pointerId] = DownPointerInfo(
                         startX = x,
@@ -180,7 +208,11 @@ class StickyFingerTouchHelper(
                 val nonStickyFingers = fingers.filter { !it.isSticky }
                 if (nonStickyFingers.isNotEmpty()) {
                     fingers.removeAll(nonStickyFingers)
-                    nonStickyFingers.forEach { onFingerRemoved(it) }
+                    nonStickyFingers.forEach {
+                        lastRemovedColor = it.color
+                        FingerColors.recordRemovedColor(it.color)
+                        onFingerRemoved(it)
+                    }
                 }
                 activePointers.clear()
                 onFingersChanged()
@@ -190,7 +222,11 @@ class StickyFingerTouchHelper(
             MotionEvent.ACTION_CANCEL -> {
                 val nonStickyFingers = fingers.filter { !it.isSticky }
                 fingers.removeAll(nonStickyFingers)
-                nonStickyFingers.forEach { onFingerRemoved(it) }
+                nonStickyFingers.forEach {
+                    lastRemovedColor = it.color
+                    FingerColors.recordRemovedColor(it.color)
+                    onFingerRemoved(it)
+                }
                 activePointers.clear()
                 lastTap = null
                 onFingersChanged()
@@ -216,6 +252,8 @@ class StickyFingerTouchHelper(
                     if (isTapOnSticky) {
                         // Tapping on existing sticky finger removes it!
                         val toRemove = info.touchedStickyFinger
+                        lastRemovedColor = toRemove.color
+                        FingerColors.recordRemovedColor(toRemove.color)
                         fingers.remove(toRemove)
                         onFingerRemoved(toRemove)
                     }
@@ -229,15 +267,21 @@ class StickyFingerTouchHelper(
             }
         }
 
+        val normalFinger = fingers.find { it.id == pointerId && !it.isSticky }
+        val liftedColor = normalFinger?.color
+        if (liftedColor != null) {
+            lastRemovedColor = liftedColor
+            FingerColors.recordRemovedColor(liftedColor)
+        }
+
         // Normal physical touch lifting
         if (info != null && isStickyEnabled) {
             val isTap = !info.hasMoved && (now - info.downTimeMs) <= tapTimeoutMs
             if (isTap) {
-                lastTap = TapRecord(upX, upY, now)
+                lastTap = TapRecord(upX, upY, now, color = liftedColor)
             }
         }
 
-        val normalFinger = fingers.find { it.id == pointerId && !it.isSticky }
         if (normalFinger != null) {
             fingers.remove(normalFinger)
             onFingerRemoved(normalFinger)

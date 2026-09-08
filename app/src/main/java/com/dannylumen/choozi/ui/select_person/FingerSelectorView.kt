@@ -79,8 +79,8 @@ class FingerSelectorView @JvmOverloads constructor(
     private val touchHelper = com.dannylumen.choozi.ui.shared.StickyFingerTouchHelper(
         context = context,
         fingers = fingers,
-        createNewFinger = { id, x, y ->
-            val color = FingerColors.pickRandomColor(fingers)
+        createNewFinger = { id, x, y, preferredColor ->
+            val color = FingerColors.pickRandomColor(fingers, preferredColor)
             val currentTheme = ThemeManager.getCurrentTheme(context)
             val sprite = currentTheme.getSpriteForFinger(fingers.size)
             FingerPoint(id, x, y, color, themeSprite = sprite)
