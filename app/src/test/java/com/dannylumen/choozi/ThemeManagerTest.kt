@@ -56,6 +56,23 @@ class ThemeManagerTest {
         assertEquals(BackgroundEffect.NEON_LINES, cyberpunkTheme.background?.effect)
         assertTrue(cyberpunkTheme.background?.isAnimated == true)
         assertEquals(0xFF0B0813.toInt(), cyberpunkTheme.background?.backgroundColor)
+
+        val fantasyTheme = ThemeManager.getTheme("fantasy")
+        assertNotNull(fantasyTheme)
+        assertEquals("Fantasy", fantasyTheme.displayName)
+        assertEquals("themes/fantasy/build_up.mp3", fantasyTheme.buildUpAudioAsset)
+        assertEquals("themes/fantasy/final.mp3", fantasyTheme.finalAudioAsset)
+        assertEquals(0.5f, fantasyTheme.buildUpVolume, 0.001f)
+        assertEquals(1.0f, fantasyTheme.finalAudioVolume, 0.001f)
+        assertEquals(1, fantasyTheme.sprites.size)
+        val wandSprite = fantasyTheme.sprites.first()
+        assertEquals("themes/fantasy/wand.png", wandSprite.assetPath)
+        assertFalse("Fantasy wand should not sway", wandSprite.sway)
+        assertFalse(fantasyTheme.hasAnimatedSprites)
+        assertNotNull(fantasyTheme.background)
+        assertEquals(BackgroundEffect.STARS_AND_SPARKLES, fantasyTheme.background?.effect)
+        assertTrue(fantasyTheme.background?.isAnimated == true)
+        assertEquals(0xFF0E0725.toInt(), fantasyTheme.background?.backgroundColor)
     }
 
     @Test
@@ -93,6 +110,13 @@ class ThemeManagerTest {
         assertNotNull(mechSprite0)
         assertEquals("themes/cyberpunk/mech.png", mechSprite0?.assetPath)
         assertEquals(mechSprite0, cyberpunkTheme.getSpriteForFinger(1))
+
+        // Fantasy theme wand sprite
+        val fantasyTheme = ThemeManager.getTheme("fantasy")
+        val wandSprite0 = fantasyTheme.getSpriteForFinger(0)
+        assertNotNull(wandSprite0)
+        assertEquals("themes/fantasy/wand.png", wandSprite0?.assetPath)
+        assertEquals(wandSprite0, fantasyTheme.getSpriteForFinger(1))
     }
 
     @Test
@@ -135,6 +159,11 @@ class ThemeManagerTest {
         assertFalse("Cyberpunk theme should not restart audio on new finger", cyberpunkTheme.restartAudioOnNewFinger)
         assertTrue("Cyberpunk theme should loop long build up audio", cyberpunkTheme.loopBuildUpAudio)
         assertTrue("Cyberpunk theme should stop build up when final note plays", cyberpunkTheme.stopBuildUpOnFinalNote)
+
+        val fantasyTheme = ThemeManager.getTheme("fantasy")
+        assertFalse("Fantasy theme should not restart audio on new finger", fantasyTheme.restartAudioOnNewFinger)
+        assertTrue("Fantasy theme should loop long build up audio", fantasyTheme.loopBuildUpAudio)
+        assertTrue("Fantasy theme should stop build up when final note plays", fantasyTheme.stopBuildUpOnFinalNote)
     }
 
     @Test
@@ -153,6 +182,31 @@ class ThemeManagerTest {
         assertNotNull(cyberpunkTheme)
         assertEquals(1, cyberpunkTheme!!.sprites.size)
         assertEquals("themes/cyberpunk/mech.png", cyberpunkTheme.sprites.first().assetPath)
+
+        val fantasyTheme = themes.find { it.id == "fantasy" }
+        assertNotNull(fantasyTheme)
+        assertEquals(1, fantasyTheme!!.sprites.size)
+        assertEquals("themes/fantasy/wand.png", fantasyTheme.sprites.first().assetPath)
+    }
+
+    @Test
+    fun testSpritePointTowardsCenter() {
+        // Sprites default to pointing towards the center of the map
+        val defaultSprite = ThemeSprite("themes/pirate/ship.png")
+        assertTrue(defaultSprite.pointTowardsCenter)
+
+        val customDisabledSprite = ThemeSprite("themes/pirate/ship.png", pointTowardsCenter = false)
+        assertFalse(customDisabledSprite.pointTowardsCenter)
+
+        // All registered theme sprites should point towards center
+        val pirateSprite = ThemeManager.getTheme("pirate").sprites.first()
+        assertTrue("Pirate ship should point towards center", pirateSprite.pointTowardsCenter)
+
+        val cyberpunkSprite = ThemeManager.getTheme("cyberpunk").sprites.first()
+        assertTrue("Cyberpunk mech should point towards center", cyberpunkSprite.pointTowardsCenter)
+
+        val fantasySprite = ThemeManager.getTheme("fantasy").sprites.first()
+        assertTrue("Fantasy wand should point towards center", fantasySprite.pointTowardsCenter)
     }
 
     @Test

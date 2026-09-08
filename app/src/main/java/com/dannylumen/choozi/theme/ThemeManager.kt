@@ -15,10 +15,10 @@ object ThemeManager {
         registerTheme(
             ThemePack(
                 id = DEFAULT_THEME_ID,
-                displayName = "Default (Classic)",
-                buildUpAudioAsset = "themes/default/build_up.mp3",
+                displayName = "Classic",
+                buildUpAudioAsset = "themes/classic/build_up.mp3",
                 buildUpAudioRes = R.raw.build_up,
-                finalAudioAsset = "themes/default/final_bell.mp3",
+                finalAudioAsset = "themes/classic/final_bell.mp3",
                 finalAudioRes = R.raw.final_bell,
                 buildUpVolume = 0.4f,
                 finalAudioVolume = 1.0f,
@@ -33,6 +33,9 @@ object ThemeManager {
 
         // 3. Cyberpunk Theme Pack
         registerCyberpunkTheme()
+
+        // 4. Fantasy Theme Pack
+        registerFantasyTheme()
     }
 
     /**
@@ -155,6 +158,34 @@ object ThemeManager {
                 restartAudioOnNewFinger = false,
                 stopBuildUpOnFinalNote = true,
                 selectionEffect = SelectionAnimationEffect.CYBER_LASERS
+            )
+        )
+    }
+
+    private fun registerFantasyTheme() {
+        registerTheme(
+            ThemePack(
+                id = "fantasy",
+                displayName = "Fantasy",
+                buildUpAudioAsset = "themes/fantasy/build_up.mp3",
+                finalAudioAsset = "themes/fantasy/final.mp3",
+                buildUpVolume = 0.5f,
+                finalAudioVolume = 1.0f,
+                background = ThemeBackground(
+                    effect = BackgroundEffect.STARS_AND_SPARKLES,
+                    backgroundColor = 0xFF0E0725.toInt()
+                ),
+                sprites = listOf(
+                    ThemeSprite(
+                        assetPath = "themes/fantasy/wand.png",
+                        scale = 0.85f,
+                        sway = false
+                    )
+                ),
+                defaultSpriteScale = 1.0f,
+                loopBuildUpAudio = true,
+                restartAudioOnNewFinger = false,
+                stopBuildUpOnFinalNote = true
             )
         )
     }

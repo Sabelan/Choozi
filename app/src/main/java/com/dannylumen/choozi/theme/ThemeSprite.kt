@@ -30,7 +30,8 @@ data class ThemeSprite(
     val sway: Boolean = false,
     val maxSwayAngleDegrees: Float = 7.5f,
     val swayPeriodMs: Long = 2800L,
-    val verticalBobDistance: Float = 5f
+    val verticalBobDistance: Float = 5f,
+    val pointTowardsCenter: Boolean = true
 ) {
     // Convenience constructor for resource ID
     constructor(
@@ -41,7 +42,8 @@ data class ThemeSprite(
         sway: Boolean = false,
         maxSwayAngleDegrees: Float = 7.5f,
         swayPeriodMs: Long = 2800L,
-        verticalBobDistance: Float = 5f
+        verticalBobDistance: Float = 5f,
+        pointTowardsCenter: Boolean = true
     ) : this(
         assetPath = null,
         drawableRes = drawableRes,
@@ -51,7 +53,8 @@ data class ThemeSprite(
         sway = sway,
         maxSwayAngleDegrees = maxSwayAngleDegrees,
         swayPeriodMs = swayPeriodMs,
-        verticalBobDistance = verticalBobDistance
+        verticalBobDistance = verticalBobDistance,
+        pointTowardsCenter = pointTowardsCenter
     )
 
     // Convenience constructor for asset path
@@ -63,7 +66,8 @@ data class ThemeSprite(
         sway: Boolean = false,
         maxSwayAngleDegrees: Float = 7.5f,
         swayPeriodMs: Long = 2800L,
-        verticalBobDistance: Float = 5f
+        verticalBobDistance: Float = 5f,
+        pointTowardsCenter: Boolean = true
     ) : this(
         assetPath = assetPath,
         drawableRes = null,
@@ -73,7 +77,8 @@ data class ThemeSprite(
         sway = sway,
         maxSwayAngleDegrees = maxSwayAngleDegrees,
         swayPeriodMs = swayPeriodMs,
-        verticalBobDistance = verticalBobDistance
+        verticalBobDistance = verticalBobDistance,
+        pointTowardsCenter = pointTowardsCenter
     )
 
     companion object {
@@ -89,6 +94,9 @@ data class ThemeSprite(
      * Draws this sprite centered at (centerX, centerY) with aspect-ratio-preserving bounds
      * that fit proportionally inside (fingerRadius * 2 * scale).
      *
+     * If [pointTowardsCenter] is enabled, sprites to the right of the middle of the screen/map
+     * are flipped horizontally so all sprites face inward towards the center ("looking at each other").
+     *
      * If [sway] is enabled, applies a slow natural rotation and vertical bobbing to simulate
      * floating in ocean waves, using [seed] to give different touch points a distinct wave phase.
      */
@@ -98,9 +106,13 @@ data class ThemeSprite(
         centerX: Float,
         centerY: Float,
         fingerRadius: Float,
-        seed: Int = 0
+        seed: Int = 0,
+        mapCenterX: Float? = null
     ) {
         val targetBoxSize = fingerRadius * 2f * scale
+
+        val midX = mapCenterX ?: (canvas.width / 2f)
+        val shouldFlipHorizontal = pointTowardsCenter && canvas.width > 0 && centerX > midX
 
         var finalCenterX = centerX + (offsetXRatio * targetBoxSize)
         var finalCenterY = centerY + (offsetYRatio * targetBoxSize)
@@ -115,9 +127,15 @@ data class ThemeSprite(
             finalCenterY += bob
         }
 
-        if (rotationAngle != 0f) {
+        val needsTransform = shouldFlipHorizontal || rotationAngle != 0f
+        if (needsTransform) {
             canvas.save()
-            canvas.rotate(rotationAngle, finalCenterX, finalCenterY)
+            if (shouldFlipHorizontal) {
+                canvas.scale(-1f, 1f, centerX, finalCenterY)
+            }
+            if (rotationAngle != 0f) {
+                canvas.rotate(rotationAngle, finalCenterX, finalCenterY)
+            }
         }
 
         try {
@@ -162,7 +180,7 @@ data class ThemeSprite(
             drawable.setBounds(left, top, right, bottom)
             drawable.draw(canvas)
         } finally {
-            if (rotationAngle != 0f) {
+            if (needsTransform) {
                 canvas.restore()
             }
         }

@@ -112,6 +112,7 @@ You can use either procedural animated effects or static images:
 #### 1. Animated Background Effects (`BackgroundEffect`)
 - **`BackgroundEffect.OCEAN_WAVES`**: Renders deep nautical ocean blue gradients with multiple undulating, rolling wave layers and soft sea foam crest highlights that animate continuously at 60+ FPS.
 - **`BackgroundEffect.NEON_LINES`**: Renders a deep synthwave violet and dark plum background bathed in glowing pink and purple radial/linear light gradients, an ambient pulsed cyber grid, and animated traveling neon circuit packets at 60+ FPS.
+- **`BackgroundEffect.STARS_AND_SPARKLES`**: Renders a magical enchanted twilight night sky with pulsing celestial nebulae (fairy magenta, starlight cyan, stardust gold), a twinkling starfield, floating pixie dust sparkles drifting upwards with whimsical swaying, gleaming 4-point and 8-point fairy tale sparkle stars, and periodic shooting stars with radiant tails at 60+ FPS.
 
 ```kotlin
 background = ThemeBackground(
