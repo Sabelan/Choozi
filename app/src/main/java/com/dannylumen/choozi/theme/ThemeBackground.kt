@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 
 import android.graphics.Color
 import android.graphics.LinearGradient
+import android.graphics.RadialGradient
 import android.graphics.Path
 import android.graphics.PathMeasure
 import kotlin.math.cos
@@ -163,9 +164,9 @@ data class ThemeBackground(
         )
 
         private val NEON_LINES_CONFIG = listOf(
-            // 0. Acid Lime Green - Full horizontal span across upper section
+            // 0. Neon Pink - Full horizontal span across upper section
             NeonLineConfig(
-                color = 0xFF39FF14.toInt(),
+                color = 0xFFFF2DAA.toInt(),
                 points = listOf(-0.02f to 0.08f, 0.24f to 0.08f, 0.38f to 0.14f, 0.70f to 0.14f, 0.82f to 0.08f, 1.02f to 0.08f),
                 pulseSpeed = 3.2f,
                 pulsePhase = 3.4f,
@@ -181,9 +182,9 @@ data class ThemeBackground(
                 packetSpeed = 0.28f,
                 packetOffset = 0.1f
             ),
-            // 2. Cyber Gold - Full horizontal span across mid-upper section
+            // 2. Electric Orchid - Full horizontal span across mid-upper section
             NeonLineConfig(
-                color = 0xFFFFD700.toInt(),
+                color = 0xFFE040FB.toInt(),
                 points = listOf(-0.02f to 0.36f, 0.18f to 0.36f, 0.32f to 0.44f, 0.64f to 0.44f, 0.76f to 0.40f, 1.02f to 0.40f),
                 pulseSpeed = 2.7f,
                 pulsePhase = 1.1f,
@@ -192,7 +193,7 @@ data class ThemeBackground(
             ),
             // 3. Laser Blue - Full horizontal span across center section
             NeonLineConfig(
-                color = 0xFF00BFFF.toInt(),
+                color = 0xFF00D4FF.toInt(),
                 points = listOf(-0.02f to 0.48f, 0.26f to 0.48f, 0.38f to 0.54f, 0.66f to 0.54f, 0.78f to 0.48f, 1.02f to 0.48f),
                 pulseSpeed = 3.5f,
                 pulsePhase = 5.2f,
@@ -217,9 +218,9 @@ data class ThemeBackground(
                 packetSpeed = 0.22f,
                 packetOffset = 0.75f
             ),
-            // 6. Neon Amber - Full horizontal span across lower section
+            // 6. Neon Rose Pink - Full horizontal span across lower section
             NeonLineConfig(
-                color = 0xFFFF7700.toInt(),
+                color = 0xFFFF4081.toInt(),
                 points = listOf(-0.02f to 0.78f, 0.28f to 0.78f, 0.42f to 0.84f, 0.72f to 0.84f, 0.86f to 0.80f, 1.02f to 0.80f),
                 pulseSpeed = 2.5f,
                 pulsePhase = 2.5f,
@@ -259,12 +260,30 @@ data class ThemeBackground(
                 style = Paint.Style.FILL
             }
         }
+        private val cyberPinkLightPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
+        private val cyberPurpleLightPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
+        private val cyberLinearGlowPaint by lazy {
+            Paint().apply {
+                isAntiAlias = true
+                style = Paint.Style.FILL
+            }
+        }
         private val cyberGridPaint by lazy {
             Paint().apply {
                 isAntiAlias = true
                 style = Paint.Style.STROKE
                 strokeWidth = 1.0f
-                color = 0x1400F0FF.toInt()
+                color = 0x22E040FB.toInt()
             }
         }
         private val neonOuterGlowPaint by lazy {
@@ -637,14 +656,58 @@ data class ThemeBackground(
             lastNeonW = viewWidth
             lastNeonH = viewHeight
 
+            // Base gradient leaning into deep midnight purple, violet, and dark plum
             cyberBasePaint.shader = LinearGradient(
                 0f, 0f, 0f, h,
                 intArrayOf(
-                    0xFF07050F.toInt(),
-                    0xFF0D0820.toInt(),
-                    0xFF050712.toInt()
+                    0xFF1A072E.toInt(), // Deep midnight purple at top
+                    0xFF280B44.toInt(), // Rich glowing dark violet in upper-mid
+                    0xFF1E0736.toInt(), // Deep plum violet mid-section
+                    0xFF110321.toInt()  // Velvet dark purple-black at bottom
                 ),
-                floatArrayOf(0f, 0.45f, 1f),
+                floatArrayOf(0f, 0.35f, 0.70f, 1f),
+                Shader.TileMode.CLAMP
+            )
+
+            // Luminous ambient pink light gradient bloom in upper-right
+            val pinkRadius = maxOf(w, h) * 0.65f
+            cyberPinkLightPaint.shader = RadialGradient(
+                w * 0.82f, h * 0.20f,
+                pinkRadius,
+                intArrayOf(
+                    0x4DFF2A85.toInt(), // Glowing neon pink core (~30% alpha)
+                    0x20E040FB.toInt(), // Soft orchid aura (~13% alpha)
+                    0x00000000          // Fade to transparent
+                ),
+                floatArrayOf(0f, 0.50f, 1f),
+                Shader.TileMode.CLAMP
+            )
+
+            // Luminous ambient purple/violet light gradient bloom in lower-left
+            val purpleRadius = maxOf(w, h) * 0.70f
+            cyberPurpleLightPaint.shader = RadialGradient(
+                w * 0.18f, h * 0.76f,
+                purpleRadius,
+                intArrayOf(
+                    0x449D00FF.toInt(), // Electric purple/violet core (~27% alpha)
+                    0x1C7C4DFF.toInt(), // Soft indigo glow (~11% alpha)
+                    0x00000000          // Fade to transparent
+                ),
+                floatArrayOf(0f, 0.55f, 1f),
+                Shader.TileMode.CLAMP
+            )
+
+            // Soft diagonal light gradient wash across center
+            cyberLinearGlowPaint.shader = LinearGradient(
+                0f, h * 0.28f,
+                w, h * 0.72f,
+                intArrayOf(
+                    0x00FF2A85,          // Transparent top-left
+                    0x22FF4081.toInt(), // Soft translucent pink mid-wash (~13% alpha)
+                    0x1EB026FF.toInt(), // Soft translucent violet wash (~12% alpha)
+                    0x00B026FF          // Transparent bottom-right
+                ),
+                floatArrayOf(0f, 0.38f, 0.65f, 1f),
                 Shader.TileMode.CLAMP
             )
 
@@ -664,15 +727,28 @@ data class ThemeBackground(
             }
         }
 
-        // 2. Draw base cyberpunk dark gradient
+        // 2. Draw base cyberpunk purple/violet dark gradient
         canvas.drawRect(0f, 0f, w, h, cyberBasePaint)
 
         val timeSec = (System.currentTimeMillis() % 1_000_000L) / 1000f
 
-        // 3. Draw ambient cyber grid
+        // 3. Draw atmospheric pink and purple light gradients with subtle breathing pulse
+        val pinkPulse = 0.82f + 0.18f * sin(timeSec * 1.3f)
+        cyberPinkLightPaint.alpha = (255 * pinkPulse).toInt().coerceIn(0, 255)
+        canvas.drawRect(0f, 0f, w, h, cyberPinkLightPaint)
+
+        val purplePulse = 0.82f + 0.18f * cos(timeSec * 1.0f)
+        cyberPurpleLightPaint.alpha = (255 * purplePulse).toInt().coerceIn(0, 255)
+        canvas.drawRect(0f, 0f, w, h, cyberPurpleLightPaint)
+
+        val linearPulse = 0.80f + 0.20f * sin(timeSec * 0.8f + 1.2f)
+        cyberLinearGlowPaint.alpha = (255 * linearPulse).toInt().coerceIn(0, 255)
+        canvas.drawRect(0f, 0f, w, h, cyberLinearGlowPaint)
+
+        // 4. Draw ambient cyber grid with subtle violet glow
         val gridStep = (w / 14f).coerceIn(60f, 95f)
         val gridPulse = 0.75f + 0.25f * sin(timeSec * 1.6f)
-        cyberGridPaint.alpha = (22 * gridPulse).toInt().coerceIn(6, 45)
+        cyberGridPaint.alpha = (26 * gridPulse).toInt().coerceIn(8, 50)
 
         var gx = gridStep
         while (gx < w) {

@@ -41,7 +41,7 @@ class ThemeManagerTest {
         assertNotNull(cyberpunkTheme)
         assertEquals("Cyberpunk", cyberpunkTheme.displayName)
         assertEquals("themes/cyberpunk/cyberpunk.mp3", cyberpunkTheme.buildUpAudioAsset)
-        assertEquals("themes/cyberpunk/final_louder.mp3", cyberpunkTheme.finalAudioAsset)
+        assertEquals("themes/cyberpunk/final.mp3", cyberpunkTheme.finalAudioAsset)
         assertEquals(0.4f, cyberpunkTheme.buildUpVolume, 0.001f)
         assertEquals(1.0f, cyberpunkTheme.finalAudioVolume, 0.001f)
         assertEquals(com.dannylumen.choozi.theme.SelectionAnimationEffect.CYBER_LASERS, cyberpunkTheme.selectionEffect)

@@ -6,7 +6,7 @@ This guide explains how the Choozi Theme Pack system works and how to create and
 
 ## 1. How It Works
 
-Choozi's gameplay relies on multi-touch circles with pulsating glow animations and countdown audio. The theme system overlays custom audio and visuals on top of this foundation while preserving gameplay logic:
+Choozi relies on multi-touch circles with pulsating glow animations and countdown audio. The theme system overlays custom audio and visuals on top of this foundation while preserving gameplay logic:
 
 1. **Audio**: [`AudioManager`](app/src/main/java/com/dannylumen/choozi/ui/shared/AudioPlayer.kt) queries [`ThemeManager.getCurrentTheme(context)`](app/src/main/java/com/dannylumen/choozi/theme/ThemeManager.kt) to play the theme's build-up music during countdown and victory sound effect when a choice is made.
 2. **Sprites**: When fingers touch the screen, [`FingerPoint`](app/src/main/java/com/dannylumen/choozi/ui/shared/FingerPoint.kt) receives a sprite from the active theme. The glowing circle is drawn first, followed by the sprite centered on top. If numbers are displayed (Ordering mode), a high-contrast badge is drawn over the sprite.
@@ -111,10 +111,11 @@ You can use either procedural animated effects or static images:
 
 #### 1. Animated Background Effects (`BackgroundEffect`)
 - **`BackgroundEffect.OCEAN_WAVES`**: Renders deep nautical ocean blue gradients with multiple undulating, rolling wave layers and soft sea foam crest highlights that animate continuously at 60+ FPS.
+- **`BackgroundEffect.NEON_LINES`**: Renders a deep synthwave violet and dark plum background bathed in glowing pink and purple radial/linear light gradients, an ambient pulsed cyber grid, and animated traveling neon circuit packets at 60+ FPS.
 
 ```kotlin
 background = ThemeBackground(
-    effect = BackgroundEffect.OCEAN_WAVES
+    effect = BackgroundEffect.NEON_LINES
 )
 ```
 
