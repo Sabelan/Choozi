@@ -172,7 +172,7 @@ object ThemeManager {
                 buildUpVolume = 0.5f,
                 finalAudioVolume = 1.0f,
                 background = ThemeBackground(
-                    assetPath = "themes/fantasy/background.jpeg",
+                    assetPath = "themes/fantasy/castle.jpeg",
                     scaleMode = BackgroundScaleMode.CENTER_CROP,
                     effect = BackgroundEffect.STARS_AND_SPARKLES
                 ),

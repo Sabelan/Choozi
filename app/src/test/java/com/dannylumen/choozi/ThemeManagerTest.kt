@@ -74,7 +74,7 @@ class ThemeManagerTest {
         assertTrue(fantasyTheme.randomizeSprites)
         assertFalse(fantasyTheme.hasAnimatedSprites)
         assertNotNull(fantasyTheme.background)
-        assertEquals("themes/fantasy/background.jpeg", fantasyTheme.background?.assetPath)
+        assertEquals("themes/fantasy/castle.jpeg", fantasyTheme.background?.assetPath)
         assertEquals(BackgroundScaleMode.CENTER_CROP, fantasyTheme.background?.scaleMode)
         assertEquals(BackgroundEffect.STARS_AND_SPARKLES, fantasyTheme.background?.effect)
         assertTrue(fantasyTheme.background?.isAnimated == true)
