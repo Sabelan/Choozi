@@ -65,4 +65,11 @@
     <string name="settings_sticky_fingers_key">sticky_fingers_settings_key</string>
     <string name="settings_sticky_fingers_title">Sticky Fingers</string>
     <string name="settings_sticky_fingers_summary">Double tap to place a finger that stays on screen until tapped again</string>
+
+    <!-- Feedback Settings -->
+    <string name="settings_feedback_section_title">Feedback &amp; Support</string>
+    <string name="settings_feedback_key">feedback_settings_key</string>
+    <string name="settings_feedback_title">Report Bug or Request Feature</string>
+    <string name="settings_feedback_summary">Report bugs, request features, or give feedback on GitHub</string>
+    <string name="settings_feedback_url" translatable="false">https://github.com/Sabelan/Choozi/issues</string>
 </resources>

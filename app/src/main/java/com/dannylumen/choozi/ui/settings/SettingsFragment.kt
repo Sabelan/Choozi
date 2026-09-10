@@ -1,5 +1,7 @@
 package com.dannylumen.choozi.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.preference.ListPreference
 import androidx.preference.Preference
@@ -57,6 +59,21 @@ class SettingsFragment : PreferenceFragmentCompat() {
             false
         ) ?: false
         updateDependentSoundPreferences(isMutedAll)
+
+        // --- Feedback preference logic ---
+        val feedbackPreference: Preference? =
+            findPreference(getString(R.string.settings_feedback_key))
+        feedbackPreference?.setOnPreferenceClickListener {
+            try {
+                val browserIntent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(getString(R.string.settings_feedback_url))
+                )
+                startActivity(browserIntent)
+            } catch (_: Exception) {
+            }
+            true
+        }
     }
 
     private fun updateDependentSoundPreferences(isMutedAll: Boolean) {
