@@ -15,6 +15,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.theme.CannonballBurstAnimation
+import com.dannylumen.choozi.theme.LaserBurstAnimation
+import com.dannylumen.choozi.theme.MagicBurstAnimation
 import com.dannylumen.choozi.theme.SelectionAnimationEffect
 import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
@@ -59,7 +61,8 @@ class FingerOrderingView @JvmOverloads constructor(
     // Audio Manager
     private val audioManager: AudioManager = AudioManager(context)
     private val cannonballBurstAnimation = CannonballBurstAnimation()
-    private val laserBurstAnimation = com.dannylumen.choozi.theme.LaserBurstAnimation()
+    private val laserBurstAnimation = LaserBurstAnimation()
+    private val magicBurstAnimation = MagicBurstAnimation()
 
     // For drawing lines
     private val linePath = Path()
@@ -88,7 +91,7 @@ class FingerOrderingView @JvmOverloads constructor(
         fingers = activeFingers,
         createNewFinger = { id, x, y, preferredColor ->
             val currentTheme = ThemeManager.getCurrentTheme(context)
-            val sprite = currentTheme.getSpriteForFinger(activeFingers.size)
+            val sprite = currentTheme.getSpriteForFinger(activeFingers.size, activeFingers.mapNotNull { it.themeSprite })
             FingerPoint(
                 id, x, y, color = FingerColors.pickRandomColor(activeFingers, preferredColor), themeSprite = sprite
             )
@@ -263,6 +266,29 @@ class FingerOrderingView @JvmOverloads constructor(
                         invalidate()
                     }
                 }
+            } else if (currentTheme.selectionEffect == SelectionAnimationEffect.FANTASY_MAGIC) {
+                if (currentAnimatingFingerIndex < assignedNumbersOrder.size - 1) {
+                    val nextFinger = assignedNumbersOrder[currentAnimatingFingerIndex + 1]
+                    magicBurstAnimation.startTargeted(
+                        originX = fingerToAnimate.x,
+                        originY = fingerToAnimate.y,
+                        targetX = nextFinger.x,
+                        targetY = nextFinger.y,
+                        fingerRadius = fingerToAnimate.fingerRadius,
+                        durationMs = ANIMATION_DURATION_MS
+                    ) {
+                        invalidate()
+                    }
+                } else {
+                    // Cast magical burst in all directions for the last wizard/witch in the chain
+                    magicBurstAnimation.start(
+                        fingerToAnimate.x,
+                        fingerToAnimate.y,
+                        fingerToAnimate.fingerRadius
+                    ) {
+                        invalidate()
+                    }
+                }
             }
 
             // Start the line segment building to the finger
@@ -400,6 +426,12 @@ class FingerOrderingView @JvmOverloads constructor(
             postInvalidateOnAnimation()
         }
 
+        // Draw magic burst animation if active
+        if (magicBurstAnimation.isRunning) {
+            magicBurstAnimation.draw(context, canvas)
+            postInvalidateOnAnimation()
+        }
+
         // Draw countdown timer text
         if (isCountingDown && !selectionCompleteAndAnimationsDone && activeFingers.isNotEmpty()) {
             val countdownText = countdownSecondsRemaining.toString()
@@ -415,6 +447,7 @@ class FingerOrderingView @JvmOverloads constructor(
         countdownTimer?.cancel()
         cannonballBurstAnimation.cancel()
         laserBurstAnimation.cancel()
+        magicBurstAnimation.cancel()
         audioManager.stopAny()
         // Stop any ongoing animations (more robust animator cancellation might be needed for complex cases)
         assignedNumbersOrder.forEach {
@@ -477,6 +510,7 @@ class FingerOrderingView @JvmOverloads constructor(
         countdownTimer?.cancel()
         cannonballBurstAnimation.cancel()
         laserBurstAnimation.cancel()
+        magicBurstAnimation.cancel()
         audioManager.release()
     }
 }

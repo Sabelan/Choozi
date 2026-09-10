@@ -18,8 +18,8 @@ class ThemeManagerTest {
 
         val defaultTheme = themes.first()
         assertEquals(ThemeManager.DEFAULT_THEME_ID, defaultTheme.id)
-        assertEquals("themes/default/build_up.mp3", defaultTheme.buildUpAudioAsset)
-        assertEquals("themes/default/final_bell.mp3", defaultTheme.finalAudioAsset)
+        assertEquals("themes/classic/build_up.mp3", defaultTheme.buildUpAudioAsset)
+        assertEquals("themes/classic/final_bell.mp3", defaultTheme.finalAudioAsset)
         assertTrue(defaultTheme.sprites.isEmpty())
 
         val pirateTheme = ThemeManager.getTheme("pirate")
@@ -64,15 +64,21 @@ class ThemeManagerTest {
         assertEquals("themes/fantasy/final.mp3", fantasyTheme.finalAudioAsset)
         assertEquals(0.5f, fantasyTheme.buildUpVolume, 0.001f)
         assertEquals(1.0f, fantasyTheme.finalAudioVolume, 0.001f)
-        assertEquals(1, fantasyTheme.sprites.size)
-        val wandSprite = fantasyTheme.sprites.first()
-        assertEquals("themes/fantasy/wand.png", wandSprite.assetPath)
-        assertFalse("Fantasy wand should not sway", wandSprite.sway)
+        assertEquals(2, fantasyTheme.sprites.size)
+        val wizardSprite = fantasyTheme.sprites[0]
+        assertEquals("themes/fantasy/wizard.png", wizardSprite.assetPath)
+        assertFalse("Fantasy wizard should not sway", wizardSprite.sway)
+        val witchSprite = fantasyTheme.sprites[1]
+        assertEquals("themes/fantasy/witch.png", witchSprite.assetPath)
+        assertFalse("Fantasy witch should not sway", witchSprite.sway)
+        assertTrue(fantasyTheme.randomizeSprites)
         assertFalse(fantasyTheme.hasAnimatedSprites)
         assertNotNull(fantasyTheme.background)
+        assertEquals("themes/fantasy/background.jpeg", fantasyTheme.background?.assetPath)
+        assertEquals(BackgroundScaleMode.CENTER_CROP, fantasyTheme.background?.scaleMode)
         assertEquals(BackgroundEffect.STARS_AND_SPARKLES, fantasyTheme.background?.effect)
         assertTrue(fantasyTheme.background?.isAnimated == true)
-        assertEquals(0xFF0E0725.toInt(), fantasyTheme.background?.backgroundColor)
+        assertEquals(com.dannylumen.choozi.theme.SelectionAnimationEffect.FANTASY_MAGIC, fantasyTheme.selectionEffect)
     }
 
     @Test
@@ -111,12 +117,18 @@ class ThemeManagerTest {
         assertEquals("themes/cyberpunk/mech.png", mechSprite0?.assetPath)
         assertEquals(mechSprite0, cyberpunkTheme.getSpriteForFinger(1))
 
-        // Fantasy theme wand sprite
+        // Fantasy theme randomized sprites (wizard and witch)
         val fantasyTheme = ThemeManager.getTheme("fantasy")
-        val wandSprite0 = fantasyTheme.getSpriteForFinger(0)
-        assertNotNull(wandSprite0)
-        assertEquals("themes/fantasy/wand.png", wandSprite0?.assetPath)
-        assertEquals(wandSprite0, fantasyTheme.getSpriteForFinger(1))
+        assertTrue(fantasyTheme.randomizeSprites)
+        val spriteA = fantasyTheme.getSpriteForFinger(0)
+        assertNotNull(spriteA)
+        assertTrue(spriteA?.assetPath == "themes/fantasy/wizard.png" || spriteA?.assetPath == "themes/fantasy/witch.png")
+
+        // When finger A is active, finger B receives the other sprite (so fingers get different assets)
+        val spriteB = fantasyTheme.getSpriteForFinger(1, listOf(spriteA))
+        assertNotNull(spriteB)
+        assertNotEquals(spriteA, spriteB)
+        assertTrue(spriteB?.assetPath == "themes/fantasy/wizard.png" || spriteB?.assetPath == "themes/fantasy/witch.png")
     }
 
     @Test
@@ -185,8 +197,30 @@ class ThemeManagerTest {
 
         val fantasyTheme = themes.find { it.id == "fantasy" }
         assertNotNull(fantasyTheme)
-        assertEquals(1, fantasyTheme!!.sprites.size)
-        assertEquals("themes/fantasy/wand.png", fantasyTheme.sprites.first().assetPath)
+        assertEquals(2, fantasyTheme!!.sprites.size)
+        assertEquals("themes/fantasy/wizard.png", fantasyTheme.sprites[0].assetPath)
+        assertEquals("themes/fantasy/witch.png", fantasyTheme.sprites[1].assetPath)
+    }
+
+    @Test
+    fun testRandomSpriteSelection() {
+        val fantasyTheme = ThemeManager.getTheme("fantasy")
+        assertTrue(fantasyTheme.randomizeSprites)
+
+        val wizard = fantasyTheme.sprites.find { it.assetPath == "themes/fantasy/wizard.png" }!!
+        val witch = fantasyTheme.sprites.find { it.assetPath == "themes/fantasy/witch.png" }!!
+
+        // If wizard is used by finger 1, finger 2 gets witch (a different asset)
+        val nextAfterWizard = fantasyTheme.getSpriteForFinger(1, listOf(wizard))
+        assertEquals(witch, nextAfterWizard)
+
+        // If witch is used by finger 1, finger 2 gets wizard (a different asset)
+        val nextAfterWitch = fantasyTheme.getSpriteForFinger(1, listOf(witch))
+        assertEquals(wizard, nextAfterWitch)
+
+        // When both are already in use, it returns one of the valid sprites
+        val afterBoth = fantasyTheme.getSpriteForFinger(2, listOf(wizard, witch))
+        assertTrue(afterBoth == wizard || afterBoth == witch)
     }
 
     @Test

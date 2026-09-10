@@ -601,25 +601,25 @@ data class ThemeBackground(
     fun draw(context: Context, canvas: Canvas, viewWidth: Int, viewHeight: Int) {
         if (viewWidth <= 0 || viewHeight <= 0) return
 
-        // 1. Animated wave effect
-        if (effect == BackgroundEffect.OCEAN_WAVES) {
-            drawOceanWaves(canvas, viewWidth, viewHeight)
-            return
+        val hasImage = assetPath != null || drawableRes != null
+
+        // Standalone animated procedural effects (when no image is provided)
+        if (!hasImage) {
+            if (effect == BackgroundEffect.OCEAN_WAVES) {
+                drawOceanWaves(canvas, viewWidth, viewHeight)
+                return
+            }
+            if (effect == BackgroundEffect.NEON_LINES) {
+                drawNeonLines(canvas, viewWidth, viewHeight)
+                return
+            }
+            if (effect == BackgroundEffect.MAGICAL_SPARKLES || effect == BackgroundEffect.STARS_AND_SPARKLES) {
+                drawMagicalSparkles(canvas, viewWidth, viewHeight, overlayOnly = false)
+                return
+            }
         }
 
-        // 2. Animated neon lines effect
-        if (effect == BackgroundEffect.NEON_LINES) {
-            drawNeonLines(canvas, viewWidth, viewHeight)
-            return
-        }
-
-        // 3. Animated magical sparkles effect
-        if (effect == BackgroundEffect.MAGICAL_SPARKLES || effect == BackgroundEffect.STARS_AND_SPARKLES) {
-            drawMagicalSparkles(canvas, viewWidth, viewHeight)
-            return
-        }
-
-        // 2. Draw solid color if provided
+        // 1. Draw solid color if provided
         backgroundColor?.let { color ->
             canvas.drawColor(color)
         }
@@ -643,25 +643,33 @@ data class ThemeBackground(
                         canvas.drawRect(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat(), paint)
                     }
                 }
-                return
+            }
+        } else if (drawableRes != null) {
+            // Fallback to drawable resource if provided
+            val drawable = ContextCompat.getDrawable(context, drawableRes)
+            if (drawable != null) {
+                when (scaleMode) {
+                    BackgroundScaleMode.STRETCH, BackgroundScaleMode.NINE_PATCH -> {
+                        drawable.setBounds(0, 0, viewWidth, viewHeight)
+                        drawable.draw(canvas)
+                    }
+                    BackgroundScaleMode.CENTER_CROP -> {
+                        drawCenterCropped(drawable, canvas, viewWidth, viewHeight)
+                    }
+                    BackgroundScaleMode.TILE -> {
+                        drawTiled(drawable, canvas, viewWidth, viewHeight)
+                    }
+                }
             }
         }
 
-        // 3. Fallback to drawable resource if provided
-        val resId = drawableRes ?: return
-        val drawable = ContextCompat.getDrawable(context, resId) ?: return
-
-        when (scaleMode) {
-            BackgroundScaleMode.STRETCH, BackgroundScaleMode.NINE_PATCH -> {
-                drawable.setBounds(0, 0, viewWidth, viewHeight)
-                drawable.draw(canvas)
-            }
-            BackgroundScaleMode.CENTER_CROP -> {
-                drawCenterCropped(drawable, canvas, viewWidth, viewHeight)
-            }
-            BackgroundScaleMode.TILE -> {
-                drawTiled(drawable, canvas, viewWidth, viewHeight)
-            }
+        // 3. Draw animated overlay effect over the image if configured
+        if (effect == BackgroundEffect.MAGICAL_SPARKLES || effect == BackgroundEffect.STARS_AND_SPARKLES) {
+            drawMagicalSparkles(canvas, viewWidth, viewHeight, overlayOnly = true)
+        } else if (effect == BackgroundEffect.OCEAN_WAVES) {
+            drawOceanWaves(canvas, viewWidth, viewHeight)
+        } else if (effect == BackgroundEffect.NEON_LINES) {
+            drawNeonLines(canvas, viewWidth, viewHeight)
         }
     }
 
@@ -1088,7 +1096,12 @@ data class ThemeBackground(
         canvas.drawCircle(x, y, 3.0f, neonTerminalDotPaint)
     }
 
-    private fun drawMagicalSparkles(canvas: Canvas, viewWidth: Int, viewHeight: Int) {
+    private fun drawMagicalSparkles(
+        canvas: Canvas,
+        viewWidth: Int,
+        viewHeight: Int,
+        overlayOnly: Boolean = false
+    ) {
         val w = viewWidth.toFloat()
         val h = viewHeight.toFloat()
 
@@ -1149,21 +1162,24 @@ data class ThemeBackground(
             )
         }
 
-        // 2. Draw mystical twilight base sky
-        canvas.drawRect(0f, 0f, w, h, fantasyBasePaint)
+        // 2. Draw mystical twilight base sky (only if not overlaying an existing image)
+        if (!overlayOnly) {
+            canvas.drawRect(0f, 0f, w, h, fantasyBasePaint)
+        }
 
         val timeSec = (System.currentTimeMillis() % 1_000_000L) / 1000f
 
         // 3. Draw ambient breathing nebula glows
-        val pinkPulse = 0.85f + 0.15f * sin(timeSec * 0.9f)
+        val nebulaFactor = if (overlayOnly) 0.65f else 1.0f
+        val pinkPulse = (0.85f + 0.15f * sin(timeSec * 0.9f)) * nebulaFactor
         fantasyNebulaPinkPaint.alpha = (255 * pinkPulse).toInt().coerceIn(0, 255)
         canvas.drawRect(0f, 0f, w, h, fantasyNebulaPinkPaint)
 
-        val cyanPulse = 0.85f + 0.15f * cos(timeSec * 0.8f)
+        val cyanPulse = (0.85f + 0.15f * cos(timeSec * 0.8f)) * nebulaFactor
         fantasyNebulaCyanPaint.alpha = (255 * cyanPulse).toInt().coerceIn(0, 255)
         canvas.drawRect(0f, 0f, w, h, fantasyNebulaCyanPaint)
 
-        val goldPulse = 0.80f + 0.20f * sin(timeSec * 1.1f + 1.5f)
+        val goldPulse = (0.80f + 0.20f * sin(timeSec * 1.1f + 1.5f)) * nebulaFactor
         fantasyNebulaGoldPaint.alpha = (255 * goldPulse).toInt().coerceIn(0, 255)
         canvas.drawRect(0f, 0f, w, h, fantasyNebulaGoldPaint)
 

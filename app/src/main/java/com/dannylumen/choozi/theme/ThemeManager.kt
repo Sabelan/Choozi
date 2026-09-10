@@ -148,7 +148,7 @@ object ThemeManager {
                 sprites = listOf(
                     ThemeSprite(
                         assetPath = "themes/cyberpunk/mech.png",
-                        scale = 0.85f,
+                        scale = .85f,
                         offsetXRatio = -0.05f,
                         sway = false
                     )
@@ -172,20 +172,28 @@ object ThemeManager {
                 buildUpVolume = 0.5f,
                 finalAudioVolume = 1.0f,
                 background = ThemeBackground(
-                    effect = BackgroundEffect.STARS_AND_SPARKLES,
-                    backgroundColor = 0xFF0E0725.toInt()
+                    assetPath = "themes/fantasy/background.jpeg",
+                    scaleMode = BackgroundScaleMode.CENTER_CROP,
+                    effect = BackgroundEffect.STARS_AND_SPARKLES
                 ),
                 sprites = listOf(
                     ThemeSprite(
-                        assetPath = "themes/fantasy/wand.png",
+                        assetPath = "themes/fantasy/wizard.png",
+                        scale = 0.85f,
+                        sway = false
+                    ),
+                    ThemeSprite(
+                        assetPath = "themes/fantasy/witch.png",
                         scale = 0.85f,
                         sway = false
                     )
                 ),
                 defaultSpriteScale = 1.0f,
+                randomizeSprites = true,
                 loopBuildUpAudio = true,
                 restartAudioOnNewFinger = false,
-                stopBuildUpOnFinalNote = true
+                stopBuildUpOnFinalNote = true,
+                selectionEffect = SelectionAnimationEffect.FANTASY_MAGIC
             )
         )
     }

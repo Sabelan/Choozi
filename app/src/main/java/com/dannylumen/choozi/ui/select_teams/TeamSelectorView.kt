@@ -12,6 +12,7 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import com.dannylumen.choozi.theme.CannonballBurstAnimation
 import com.dannylumen.choozi.theme.LaserBurstAnimation
+import com.dannylumen.choozi.theme.MagicBurstAnimation
 import com.dannylumen.choozi.theme.SelectionAnimationEffect
 import com.dannylumen.choozi.theme.ThemeManager
 import com.dannylumen.choozi.ui.shared.AudioManager
@@ -27,6 +28,7 @@ class TeamSelectorView @JvmOverloads constructor(
     private val fingers = mutableListOf<FingerPoint>()
     private val cannonballBurstAnimation = CannonballBurstAnimation()
     private val laserBurstAnimation = LaserBurstAnimation()
+    private val magicBurstAnimation = MagicBurstAnimation()
     private var countdownSeconds: Int = 0
     private var countDownProgress: Float? = null // For initial glow before selection
     private var countDownTimer: CountDownTimer? = null
@@ -82,7 +84,7 @@ class TeamSelectorView @JvmOverloads constructor(
         fingers = fingers,
         createNewFinger = { id, x, y ->
             val currentTheme = com.dannylumen.choozi.theme.ThemeManager.getCurrentTheme(context)
-            val sprite = currentTheme.getSpriteForFinger(fingers.size)
+            val sprite = currentTheme.getSpriteForFinger(fingers.size, fingers.mapNotNull { it.themeSprite })
             FingerPoint(id, x, y, FingerColors.NEUTRAL, themeSprite = sprite)
         },
         onFingerAdded = {
@@ -201,6 +203,12 @@ class TeamSelectorView @JvmOverloads constructor(
                         invalidate()
                     }
                 }
+            } else if (currentTheme.selectionEffect == SelectionAnimationEffect.FANTASY_MAGIC) {
+                fingers.filter { it.teamId == teamToAnimate }.forEach { finger ->
+                    magicBurstAnimation.start(finger.x, finger.y, finger.fingerRadius) {
+                        invalidate()
+                    }
+                }
             }
 
             fingers.forEach { finger ->
@@ -277,6 +285,12 @@ class TeamSelectorView @JvmOverloads constructor(
             postInvalidateOnAnimation()
         }
 
+        // Draw magic burst animation if active
+        if (magicBurstAnimation.isRunning) {
+            magicBurstAnimation.draw(context, canvas)
+            postInvalidateOnAnimation()
+        }
+
         // Draw countdown timer text
         if (timerRunning && !selectionDone && countdownSeconds > 0) {
             val text = countdownSeconds.toString()
@@ -291,6 +305,7 @@ class TeamSelectorView @JvmOverloads constructor(
         audioManager.stopAny()
         cannonballBurstAnimation.cancel()
         laserBurstAnimation.cancel()
+        magicBurstAnimation.cancel()
         teamAnimationAnimator?.cancel()
         countDownTimer?.cancel()
 
@@ -331,6 +346,7 @@ class TeamSelectorView @JvmOverloads constructor(
         teamAnimationAnimator?.cancel()
         cannonballBurstAnimation.cancel()
         laserBurstAnimation.cancel()
+        magicBurstAnimation.cancel()
         audioManager.release()
     }
 }
