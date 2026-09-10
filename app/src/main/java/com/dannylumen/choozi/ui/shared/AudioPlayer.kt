@@ -70,18 +70,19 @@ class AudioManager(private val context: Context) {
     }
 
     fun playFinalNote() {
-        if (SettingsManager.isAudioMuted(context) || SettingsManager.isSelectionMuted(context)) {
-            return
-        }
         checkAndReloadThemeIfChanged()
         val theme = ThemeManager.getCurrentTheme(context)
-
-        Log.d("SelectionTiming", "AudioManager.playFinalNote() called at ${System.currentTimeMillis()} ms")
-        finalNotePlayer.restart()
 
         if (theme.stopBuildUpOnFinalNote) {
             buildUpPlayer.pause()
         }
+
+        if (SettingsManager.isAudioMuted(context) || SettingsManager.isSelectionMuted(context)) {
+            return
+        }
+
+        Log.d("SelectionTiming", "AudioManager.playFinalNote() called at ${System.currentTimeMillis()} ms")
+        finalNotePlayer.restart()
     }
 
     fun stopAny() {
